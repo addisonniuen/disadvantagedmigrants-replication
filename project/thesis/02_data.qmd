@@ -1,0 +1,509 @@
+# Data {#sec-data}
+
+```{r}
+#| label: running-all-scripts
+#| include: false
+#| echo: false
+
+# Define directory and source setup scripts
+parent_dir <- file.path(
+  rprojroot::find_root(rprojroot::has_file("project/code/01_setup.R")),
+  "project"
+)
+
+withr::with_dir(parent_dir, {
+  source(file.path(parent_dir, "code", "01_setup.R"))
+})
+withr::with_dir(parent_dir, {
+  source(file.path(parent_dir, "code", "02_datacleaning.R"))
+})
+withr::with_dir(parent_dir, {
+  source(file.path(parent_dir, "code", "03_featureengineering.R"))
+})
+withr::with_dir(parent_dir, {
+  source(file.path(parent_dir, "code", "05_analysisblock1.R"))
+})
+withr::with_dir(parent_dir, {
+  source(file.path(parent_dir, "code", "06_analysisblock2.R"))
+})
+withr::with_dir(parent_dir, {
+  source(file.path(parent_dir, "code", "07_analysisblock3.R"))
+})
+```
+
+```{r}
+#| echo: false
+#| results: false
+eng_vars <- c("english_proficiency_aneab", "english_reading_skill_sktarea")
+eng_variation <- panel_clean |>
+  filter(
+    !is.na(birthplace_group_anbcob),
+    birthplace_group_anbcob != "australia"
+  ) |>
+  summarise(
+    across(all_of(eng_vars), ~ n_distinct(.x[!is.na(.x)])),
+    .by = xwaveid
+  ) |>
+  summarise(
+    across(
+      all_of(eng_vars),
+      list(
+        n_obs = ~ sum(.x > 0),
+        n_var = ~ sum(.x > 1)
+      )
+    )
+  ) |>
+  mutate(
+    pct_aneab = 100 *
+      english_proficiency_aneab_n_var /
+      english_proficiency_aneab_n_obs,
+    pct_sktarea = 100 *
+      english_reading_skill_sktarea_n_var /
+      english_reading_skill_sktarea_n_obs
+  )
+mnes_tenure <- panel_clean |>
+  filter(birthplace_group_anbcob == "other country") |>
+  summarise(n_waves = n_distinct(wave), .by = xwaveid) |>
+  summarise(
+    med = median(n_waves),
+    sd = sd(n_waves),
+    max = max(n_waves),
+    n = n(),
+    q1 = quantile(n_waves, 0.25),
+    q3 = quantile(n_waves, 0.75),
+  )
+eng_variation <- panel_clean |>
+  filter(birthplace_group_anbcob != "australia") |>
+  mutate(
+    read_num = as.numeric(as.character(english_reading_skill_sktarea)),
+    speak = if_else(
+      wave == 1,
+      english_proficiency_hgeab,
+      english_proficiency_aneab
+    )
+  ) |>
+  summarise(
+    n_read_obs = sum(!is.na(read_num)),
+    n_read_dist = n_distinct(read_num[!is.na(read_num)]),
+    n_speak_obs = sum(!is.na(speak)),
+    n_speak_dist = n_distinct(speak[!is.na(speak)]),
+    .by = xwaveid
+  ) |>
+  summarise(
+    pct_read = 100 * sum(n_read_dist > 1) / sum(n_read_obs >= 2),
+    pct_speak = 100 * sum(n_speak_dist > 1) / sum(n_speak_obs >= 2),
+    n_read_elig = sum(n_read_obs >= 2),
+    n_speak_elig = sum(n_speak_obs >= 2),
+    n_read_multi = sum(n_read_dist > 1),
+    n_speak_multi = sum(n_speak_dist > 1)
+  )
+```
+```{r}
+#| echo: false
+#| results: false
+arrival_prof <- panel_clean |>
+  filter(birthplace_group_anbcob == "other country") |>
+  mutate(
+    speak = if_else(
+      wave == 1,
+      english_proficiency_hgeab,
+      english_proficiency_aneab
+    ),
+    birth_yr = year - age_hgage,
+    arr_age = year_arrival_aust_anyoa - birth_yr
+  ) |>
+  filter(!is.na(arr_age), arr_age >= 0, arr_age <= 80, !is.na(speak)) |>
+  summarise(
+    arr_age = first(arr_age),
+    very_well = as.integer(
+      mean(as.character(speak) == "speaks english very well") > 0.5
+    ),
+    .by = xwaveid
+  ) |>
+  mutate(early = as.integer(arr_age < 11))
+arrival_summary <- arrival_prof |>
+  summarise(
+    pct_very_well = 100 * mean(very_well),
+    n = n(),
+    .by = early
+  )
+arrival_test <- t.test(very_well ~ early, data = arrival_prof)
+```
+
+```{r}
+#| echo: false
+# Migrants with a reported year of arrival
+arrival_impute <- panel_final |>
+  filter(birthplace_group_anbcob != "australia") |>
+  summarise(reported = any(!is.na(year_arrival_aust_anyoa)), .by = xwaveid) |>
+  summarise(n_persons = n(), n_observed = sum(reported))
+```
+
+We use waves 1 to 24 (2001 to 2024) of the Household, Income and Labour Dynamics in Australia (HILDA) Survey, which is a nationally representative household panel that has interviewed the same individuals annually since 2001.[^hildadisclaimer] Three features make HILDA well suited to our questions. First, its panel structure allows us to observe year-to-year changes in income and transitions into business ownership. Second, it records each respondent’s country of birth, year of arrival and self-assessed English proficiency, which allows migrants to be distinguished by their linguistic distance from the host population. Third, it records the industry, workplace size and number of employer locations of every employed respondent, which allows small independent workplaces to be identified within each industry. Immigrants make up `r round(panel_derived |> distinct(xwaveid, migrant) |> pull(migrant) |> mean(na.rm = TRUE) * 100, 1)`% of the unweighted sample and `r round(panel_derived |> distinct(xwaveid, migrant, responding_person_longitudinal_weight_lnwtrp) |> filter(!is.na(responding_person_longitudinal_weight_lnwtrp), !is.na(migrant)) |> summarise(wm = weighted.mean(migrant, w = responding_person_longitudinal_weight_lnwtrp)) |> pull(wm) * 100, 1)`% of the weighted sample.[^abs] 
+
+The main limitation of HILDA is that it does not identify respondents' employers. Workers therefore cannot be linked to the owners of their workplaces, nor to those owners' migrant status or English proficiency. The workplace characteristics that HILDA does record are nonetheless sufficient to distinguish small independent workplaces from large chains, even within broad industries such as retail trade. Our empirical strategy therefore does not attempt to identify individual employers. For the wage analysis, we instead classify jobs by industry and employer structure and construct a measure of migrant owner density for each industry and year (@sec-loo-shares). Migrant owners are concentrated in small independent businesses, so the higher this density, the more likely a small single-site workplace in that industry and year is to be migrant-owned, whereas a large workplace or a site of a chain is not. Comparing the wage gap between small independent and other workplaces within the same industry and year, and asking how this gap varies with migrant owner density, therefore isolates pay differences associated with migrant ownership from industry-wide shocks to wages. The owner income and entry analyses do not require this link, since they observe owners and entrants into ownership directly. @tbl-hilda-vars in the appendix summarises all HILDA variables we used in the analysis.
+
+[^hildadisclaimer]: This paper uses unit record data from Household, Income and Labour Dynamics in Australia Survey (HILDA) conducted by the Australian Government Department of Social Services (DSS). The findings and views reported in this paper, however, are those of the author and should not be attributed to the Australian Government, DSS, or any of DSS' contractors or partners. We use General Release 24.0 (waves 1 to 24).
+
+[^abs]: As at 30 June 2025, 8.8 million people, or 32.0% of Australia's population, were born overseas ([ABS, Australia's population by country of birth](https://www.abs.gov.au/statistics/people/population/australias-population-country-birth/latest-release)).
+
+## Estimation Samples {#sec-data-samples}
+
+```{r}
+#| include: false
+# Sample sizes quoted below, from the main specification of each analysis (as in Table A.1)
+n_fmt <- \(x) format(x, big.mark = ",", trim = TRUE)
+n_wage <- n_fmt(nobs(regression1_v1a))
+n_unres <- n_fmt(nobs(regression2_income_unrestricted))
+n_res <- n_fmt(nobs(regression2_income))
+n_entry <- n_fmt(nobs(regression3_v4a))
+n_entries <- n_fmt(sum(data_regression_3$entry_owner[fixest::obs(regression3_v4a)]))
+```
+
+Each analysis block in @sec-methodology has its own sample (@tbl-sample-flow). The *employee sample* for the wage analysis contains wage and salary earners in waves 1 to 21, the waves in which workplace size and the number of employer locations are recorded. For the owner income analysis, we use pairs of consecutive waves ending in waves 2 to 21. The *unrestricted sample* classifies individuals by their status at $t$ (`r n_unres` person-pairs), while the *restricted sample* keeps only those with the same status in both waves (`r n_res` person-pairs), so that we do not attribute income changes caused by a change of status to ownership. For the entry analysis, we draw on all 24 waves and use `r n_entry` person-pairs in which the individual is not a business owner at $t-1$ (the *transition sample*), which contain `r n_entries` entries into ownership. 
+
+## Origin and English Proficiency {#sec-data-origin}
+
+Following @guven_age_2015, @islam_native-migrant_2016 and @to_immigration_2017, we classify respondents by country of birth as native-born Australians, migrants from main English-speaking (MES) countries[^mes] and migrants from other, non-English-speaking (MNES) countries. An English-speaking background brings substantial labour market advantages in Australia [@cobb-clark_educational_2012; @nguyen_educational_2025], but the MNES group is heterogeneous, because linguistic distance from English is a primary determinant of language acquisition [@isphording_linguistic_2014; @adsera_linguistic_2021]. We therefore split MNES migrants by English proficiency, which gives four mutually exclusive groups,
+
+$$
+G_i \in \mathcal{G} = \{\text{Native}, \ \text{MES}, \ \text{MNES}_{\text{HighEng}}, \ \text{MNES}_{\text{LowEng}}\},
+$$
+
+with the native-born as the reference group throughout. This split separates the role of language barriers, which is central to our framework, from that of migrant status in general.
+
+[^mes]: The United Kingdom, New Zealand, Canada, the United States of America, Ireland and South Africa.
+
+HILDA records self-reported speaking ability in every wave and reading ability relative to an average Australian in waves 12, 16, 20 and 24. Following @clarke_language_2016, a respondent has low proficiency if they speak English less than well or rate their reading below 4 on a scale from 0 to 10; native-born and MES respondents are proficient by construction. We assign each respondent their modal classification across all answered waves, with ties classified as proficient, for two reasons. The reading measure is collected only every four years, and MNES migrants are observed for a median of `r round(mnes_tenure$med, 1)` waves (interquartile range `r mnes_tenure$q1` to `r mnes_tenure$q3`), so most answer it once or twice. And the within-person variation appears to be reporting noise, not language acquisition. In total, `r sprintf("%.1f", eng_variation$pct_speak)`% of repeat respondents change their speaking score and `r sprintf("%.1f", eng_variation$pct_read)`% their reading score at least once, but these changes alternate between adjacent categories and do not trend upwards. The measure behaves as expected. Among MNES migrants, `r sprintf("%.1f", arrival_summary$pct_very_well[arrival_summary$early == 1])`% of those who arrived before age 11 speak English very well, against `r sprintf("%.1f", arrival_summary$pct_very_well[arrival_summary$early == 0])`% of those who arrived later (`r if (arrival_test$p.value < 0.001) "p < 0.001" else sprintf("p = %.3f", arrival_test$p.value)`), consistent with @lee_language_2022. Years in Australia are the survey year minus the year of first arrival, which is reported for `r format(arrival_impute$n_observed, big.mark = ",")` of `r format(arrival_impute$n_persons, big.mark = ",")` migrants.
+
+## Workplace Type and Size {#sec-data-workplace}
+
+In waves 1 to 21, the HILDA survey asks employed respondents how many people work at their workplace, whether their employer operates from more than one location in Australia and how many people the employer employs nationally. Following the Australian Bureau of Statistics definition of a small business, a workplace is small if fewer than 20 people work there. From these questions we construct three mutually exclusive workplace types,
+
+$$
+\begin{aligned}
+\text{SmallSingleSite}_{it} &= \mathbf{1}\{\text{WorkplaceSize}_{it}<20, \ \text{MultiLocation}_{it}=0\}, \\
+\text{SmallSiteChain}_{it} &= \mathbf{1}\{\text{WorkplaceSize}_{it}<20, \ \text{MultiLocation}_{it}=1\}, \\
+\text{ChainLike}_{it} &= \mathbf{1}\{\text{WorkplaceSize}_{it} \geq 20, \ \text{MultiLocation}_{it}=1, \ \text{EmployerSize}_{it}\geq 500\}.
+\end{aligned}
+$$
+
+A small single-site workplace is the closest observable counterpart of an independently owned small business, such as a family restaurant or a corner shop. A small-site chain also has fewer than 20 people at the workplace, but belongs to an employer with more than one location, such as a branch of a franchise. It shares the local scale of a small business but not its ownership structure. A chain-like workplace, such as a supermarket of a national chain, has 20 or more people and belongs to an employer with at least 500 employees nationally. The reference category is all other workplaces with 20 or more people that either belong to a single-location employer or to a multi-location employer with fewer than 500 employees nationally (@tbl-firmtype). 
+
+## Employment Status and Outcomes {#sec-data-outcomes}
+
+We classify each employed respondent into one of three mutually exclusive groups: employees, own-account workers and employers with employees. Own-account workers are business owners who are self-employed or own a business without employees. 
+
+*Hourly wages* are usual weekly gross earnings in the main job divided by usual weekly hours in that job, with wages below \$1 per hour treated as reporting errors. Wages are nominal, since the year fixed effects absorb common price changes,
+
+$$
+w_{it} = \frac{\text{WeeklyWageMainJob}_{it}}{\text{UsualWeeklyHoursMainJob}_{it}}, \qquad w_{it} \geq 1.
+$$
+
+*Labour and business income* adds financial-year gross wages and salary to net business income, so that incorporated owners who pay themselves a wage are comparable with unincorporated owners,
+
+$$
+y_{it} = \text{AnnualGrossWages}_{it} + \text{BusinessIncome}^{+}_{it} - \text{BusinessIncome}^{-}_{it}.
+$$
+
+Business losses are retained, since they are part of the risk of ownership.
+
+Let $s_{it} \in \{W, E, O, N\}$ denote the labour market status of individual $i$ in year $t$, where $W$ is an employee, $E$ an owner with employees, $O$ an own-account worker and $N$ not employed. *Entry into ownership* is defined for individuals who are not owners at $t-1$, that is, with $s_{i,t-1} \in \{W, N\}$,
+
+$$
+\text{Entry}_{it} =
+\begin{cases}
+1 & \text{if } s_{i,t-1} \notin \{E, O\} \text{ and } s_{it} \in \{E, O\} \\
+0 & \text{if } s_{i,t-1} \notin \{E, O\} \text{ and } s_{it} \notin \{E, O\}
+\end{cases}
+$$
+
+Every transition is counted, so an individual who leaves and later re-enters ownership contributes more than one entry. Respondents not interviewed at $t$ have no status at $t$ and are excluded.
+
+The entry analysis also uses labour market position at $t-1$. $\text{Unemployed}_{i,t-1}$ and $\text{NotInLabourForce}_{i,t-1}$ record non-employment, and $\text{LowWage}_{i,t-1}$ equals one for employees in the bottom quintile of that year's hourly wage distribution; the 1 per cent of employee person-years with a missing wage are excluded. Following @bray_hardship_2001, @butterworth_role_2012, @kiely_how_2015 and @gerards_liquidity_2020, a respondent is liquidity constrained if they report, in the self-completion questionnaire, either a cash-flow problem, such as being unable to pay bills or rent on time or asking family or friends for money, or hardship, such as going without meals, being unable to heat the home, pawning possessions or asking a welfare organisation for help,
+
+$$
+\text{LiquidityConstraint}_{it} = \mathbf{1}\{\text{CashflowProblem}_{it} = 1 \ \text{or} \ \text{Hardship}_{it} = 1\}.
+$$
+
+Respondents who do not return the questionnaire are kept, with the measure set to zero and an indicator for a missing measure.[^liqmissing]
+
+[^liqmissing]: Dropping non-returners would remove a disproportionate share of the low-English group, since a written questionnaire is harder to complete with limited English. With the missing indicator, the liquidity coefficient compares constrained with unconstrained respondents among those observed, while every respondent contributes to the other coefficients [@dardanoni_regression_2011]. Missing arrival years are treated in the same way. Because this approach can bias the other coefficients when missingness is related to them [@jones_indicator_1996], we do not interpret the control coefficients causally.
+
+## Migrant Owner Density {#sec-loo-shares}
+
+Because HILDA does not link workers to employers, we measure each worker's exposure to migrant ownership by the share of business owners in their industry and year who belong to each origin group. For employee $i$ in industry $k$ and year $t$, the leave-one-out owner share of group $g$ is
+
+$$
+{S^{g}_{kt}}^{(-i)}
+=
+\frac{\sum_{m \in (k,t),\, m \neq i} \, \omega_{mt} \, \text{Owner}_{mt}\,\vartheta_{mt}\,\mathbf{1}[G_m = g]}
+{\sum_{m \in (k,t),\, m \neq i} \, \omega_{mt} \, \text{Owner}_{mt}},
+\qquad g \in \{\text{MES},\, \text{MNES}_{\text{HighEng}},\, \text{MNES}_{\text{LowEng}}\},
+$$ {#eq-loo-shares}
+
+where $\omega_{mt}$ is the HILDA cross-sectional responding-person weight, so that the share describes the population of owners in that year, and $\vartheta_{mt}$ is the assimilation weight defined below. The shares built with this weight are our main measure throughout. As a sensitivity check, reported in the appendix only (@sec-appendix-lnw), we also build them with the longitudinal responding-person weight, which is positive only for people who have responded in every wave since wave 1. Employees in the wage analysis are not owners, so leaving out individual $i$ does not change their share, which is simply the composition of the other owners in their industry and year. Industries are the 19 ANZSIC divisions, with two-digit industries used for robustness; @tbl-share-dist summarises the distribution of the shares.
+
+### Assimilation Weighting {#sec-assimilation}
+
+The barriers in our framework should fade as migrants settle, so we also consider down-weighting each migrant owner by their years in Australia,
+
+$$
+\vartheta_{mt} =
+\begin{cases}
+\exp(-\lambda_{G_m} \, \text{YearsInAus}_{mt}) & \text{if } m \text{ is foreign-born}, \\
+0 & \text{if } m \text{ is Australian-born}.
+\end{cases}
+$$
+
+A recent arrival receives a weight close to one and a long-settled owner a weight close to zero, with a half-life of $\ln 2 / \lambda$ years; with $\lambda = 0$ the share is a plain compositional share. We compare no decay (Type 0), a single rate for all migrant owners (Type 1) and separate rates for MES and MNES owners (Type 2), and choose the rates by five-fold cross-validation over individuals, minimising the out-of-fold mean squared error of log wages from the wage equation (@eq-employee-wage), over $\lambda \in [0, 0.30]$ for Type 1 and $\lambda_{\text{MES}}, \lambda_{\text{MNES}} \in [0, 0.50]$ for Type 2. These ranges span the horizons in the assimilation literature, from convergence within a decade [@chiswick_effect_1978; @akee_immigrant_2026] to considerably longer [@arellano-bover_role_2026]. Type 1 selects $\lambda = `r cal$lambda_mean`$, a half-life of `r round(log(2) / cal$lambda_mean, 1)` years. Type 2 selects $\lambda_{\text{MES}} = `r cal$lambda_mes`$, a half-life of `r round(log(2) / cal$lambda_mes, 1)` years, and $\lambda_{\text{MNES}} = `r cal$lambda_other`$, `r if (cal$lambda_other == 0) 'which means no decay at all' else paste0('a half-life of ', round(log(2) / cal$lambda_other, 1), ' years')`, consistent with slower convergence for non-English-speaking migrants [@breunig_immigrant_2013; @colic-peisker_ethnics_2011]. The gain from decay is negligible, however. The best Type 1 rate lowers the cross-validated error by `r sprintf('%.1f', 1e5 * (cal$type1$mse[cal$type1$lambda == 0] - min(cal$type1$mse, na.rm = TRUE)))` $\times 10^{-5}$ against an error of `r sprintf('%.3f', cal$type1$mse[cal$type1$lambda == 0])`. We therefore use the plain shares (Type 0) for all main estimates and report the decay weightings for comparison only, since their rates are chosen on the same data, are poorly identified and change the units of the shares. Appendix [-@sec-appendix-assimilation] reports the grid search and the supporting literature.
+
+## Descriptive Statistics {#sec-data-desc}
+
+Ownership is strongly stratified by origin and language (@tbl-owner-industry). Construction is the largest industry of owners in every group, and native-born and MES owners have similar profiles in the remaining industries apart from agriculture, forestry and fishing. High-English MNES owners are over-represented in health care and social assistance (13.3 per cent), transport and warehousing (7.3 per cent), accommodation and food services (6.7 per cent) and financial and insurance services (3.7 per cent). Low-English MNES owners are the most distinctive group. Only 1.0 per cent operate in professional, scientific and technical services, against 11.9 to 14.6 per cent of the other groups, while they are concentrated in manufacturing (21.5 per cent), retail trade (14.9 per cent) and accommodation and food services (7.2 per cent). Across worker types (@tbl-industry-composition), ownership is concentrated in low-capital, small-scale industries such as construction, professional services and agriculture, while employees are concentrated in health care, education and public administration. Industries that rely on team production, such as accommodation and food services, have a higher share of employers, while industries suited to independent contracting, such as administrative and support services, have a higher share of own-account workers.
+
+```{r}
+#| include: false
+# Owner characteristics by origin group, used in the text below and in Table 3.1
+owner_base <- panel_final |>
+  filter(!is.na(origin_group), is_owner == 1) |>
+  mutate(
+    origin_group = forcats::fct_recode(
+      origin_group,
+      "Native-born" = "native",
+      "MES" = "mes",
+      "MNES (high English)" = "mnes_higheng",
+      "MNES (low English)" = "mnes_loweng"
+    )
+  )
+
+panel_desc_tbl <- owner_base |>
+  transmute(
+    origin_group,
+    `Age` = age_hgage,
+    `Female` = as.numeric(sex_hgsex == "female"),
+    `Married or de facto` = as.numeric(
+      marital_status_mrcurr %in% c("legally married", "de facto")
+    ),
+    `Post-school qualification` = as.numeric(
+      highest_education_achieved_edhigh1 %in%
+        c(
+          "postgrad (master or doctorate)",
+          "grad diploma, grad certificate",
+          "bachelor or honours",
+          "adv diploma, diploma",
+          "certificate iii or iv"
+        )
+    ),
+    `Low English proficiency` = low_english_timeinvariant,
+    `Years since arrival in Australia` = years_in_aus,
+    `Own-account worker` = own_account_worker,
+    `Owner with employees` = owner_with_employees,
+    `Market income` = income_labour_and_business,
+    `Cashflow problem` = cashflow_problem,
+    `Hardship` = hardship,
+    `Liquidity constraint` = liquidity_constraint,
+    `Home owner` = is_homeowner,
+    `SEIFA disadvantage decile` = seifa_decile
+  )
+```
+
+@tbl-owner-desc reports characteristics by origin group. Business owners are predominantly male, in their mid-forties and highly educated, with `r sprintf('%.0f', 100 * mean(panel_desc_tbl[['Post-school qualification']], na.rm = TRUE))`% holding a post-school qualification, falling to `r sprintf('%.0f', 100 * mean(panel_desc_tbl[['Post-school qualification']][owner_base$origin_group == 'MNES (low English)'], na.rm = TRUE))`% among low-English MNES owners. Low-English MNES owners are also far more recent arrivals.
+
+```{r}
+#| include: false
+# Waves in which each respondent is interviewed, as in Table A.6
+persist <- panel_final |>
+  filter(!is.na(origin_group), !is.na(lf_status_detail_esdtl)) |>
+  summarise(
+    n_waves = dplyr::n_distinct(wave),
+    .by = c(xwaveid, origin_group)
+  ) |>
+  summarise(
+    mean = mean(n_waves),
+    median = median(n_waves),
+    all = 100 * mean(n_waves == 24),
+    .by = origin_group
+  )
+pst <- \(g, v) persist[[v]][persist$origin_group == g]
+```
+
+Panel persistence differs substantially across groups (see @tbl-panel). Low-English migrants are interviewed in `r sprintf('%.1f', pst('mnes_loweng', 'mean'))` waves on average (median `r pst('mnes_loweng', 'median')`) against `r sprintf('%.1f', pst('native', 'mean'))` waves for native-born respondents (median `r pst('native', 'median')`), and `r sprintf('%.0f', pst('mnes_loweng', 'all'))`% of the low-English MNES group is interviewed in all 24 waves, against `r sprintf('%.0f', pst('native', 'all'))`% of the native-born. Because the owner income and entry samples require consecutive observations, low-English migrants are under-represented in them relative to their population share, and our estimation results therefore rest on few individuals.
+
+{{< pagebreak >}}
+
+```{=typst}
+#align(center + horizon)[
+  #rotate(-90deg, reflow: true)[
+    #block(width: 23cm)[
+```
+
+```{r}
+#| label: tbl-owner-desc
+#| tbl-cap: "Characteristics of business owners by origin and English proficiency group."
+#| echo: false
+#| #| tbl-colwidths: [20, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
+
+stat_vars <- setdiff(names(panel_desc_tbl), "origin_group")
+grp_levels <- levels(owner_base$origin_group)
+ref_group <- "Native-born"
+skip_vars <- c("Low English proficiency", "Years since arrival in Australia")
+
+pvals <- purrr::map_dfr(setdiff(stat_vars, skip_vars), function(v) {
+  base <- tibble::tibble(
+    xwaveid = owner_base$xwaveid,
+    grp = owner_base$origin_group,
+    y = panel_desc_tbl[[v]]
+  ) |>
+    filter(!is.na(y))
+  if (nrow(base) == 0 || stats::var(base$y) == 0) {
+    return(tibble::tibble(
+      variable = character(),
+      grp = character(),
+      p = numeric()
+    ))
+  }
+  # Each migrant group against native-born owners
+  purrr::map_dfr(setdiff(grp_levels, ref_group), function(g) {
+    d <- base |>
+      filter(grp %in% c(g, ref_group)) |>
+      mutate(in_grp = as.integer(grp == g))
+    if (dplyr::n_distinct(d$in_grp) < 2) {
+      return(tibble::tibble(variable = v, grp = g, p = NA_real_))
+    }
+    m <- fixest::feols(y ~ in_grp, data = d, cluster = ~xwaveid)
+    tibble::tibble(variable = v, grp = g, p = fixest::pvalue(m)[["in_grp"]])
+  })
+})
+
+stars <- function(p) {
+  dplyr::case_when(
+    is.na(p) ~ "",
+    p < 0.01 ~ "\u2217\u2217\u2217",
+    p < 0.05 ~ "\u2217\u2217",
+    p < 0.10 ~ "\u2217",
+    .default = ""
+  )
+}
+
+fmt_num <- function(x) formatC(x, format = "f", digits = 2, big.mark = ",")
+fmt_n <- function(x) format(x, big.mark = ",", trim = TRUE)
+
+grp_cells <- purrr::map_dfr(stat_vars, function(v) {
+  owner_base |>
+    mutate(y = panel_desc_tbl[[v]]) |>
+    summarise(
+      m = mean(y, na.rm = TRUE),
+      s = stats::sd(y, na.rm = TRUE),
+      .by = origin_group
+    ) |>
+    mutate(variable = v)
+}) |>
+  left_join(pvals, by = c("variable", "origin_group" = "grp")) |>
+  mutate(
+    Mean = ifelse(is.nan(m), "", paste0(fmt_num(m), stars(p))),
+    SD = ifelse(is.nan(s) | is.na(s), "", fmt_num(s))
+  ) |>
+  select(variable, origin_group, Mean, SD) |>
+  tidyr::pivot_wider(
+    names_from = origin_group,
+    values_from = c(Mean, SD),
+    names_glue = "{origin_group}__{.value}"
+  )
+
+all_cells <- purrr::map_dfr(stat_vars, function(v) {
+  y <- panel_desc_tbl[[v]]
+  tibble::tibble(
+    variable = v,
+    `All__Mean` = ifelse(all(is.na(y)), "", fmt_num(mean(y, na.rm = TRUE))),
+    `All__SD` = ifelse(all(is.na(y)), "", fmt_num(stats::sd(y, na.rm = TRUE)))
+  )
+})
+
+col_order <- c(
+  "variable",
+  as.vector(rbind(paste0(grp_levels, "__Mean"), paste0(grp_levels, "__SD"))),
+  "All__Mean",
+  "All__SD"
+)
+
+body <- grp_cells |>
+  left_join(all_cells, by = "variable") |>
+  arrange(match(variable, stat_vars)) |>
+  select(all_of(col_order))
+
+grp_counts <- owner_base |>
+  summarise(
+    obs = n(),
+    persons = dplyr::n_distinct(xwaveid),
+    .by = origin_group
+  ) |>
+  arrange(match(origin_group, grp_levels))
+
+count_row <- function(label, vals, total) {
+  out <- c(
+    label,
+    as.vector(rbind(fmt_n(vals), rep("", length(vals)))),
+    fmt_n(total),
+    ""
+  )
+  as.list(setNames(out, col_order))
+}
+
+n_rows <- bind_rows(
+  tibble::as_tibble(count_row(
+    "Person-years",
+    grp_counts$obs,
+    nrow(owner_base)
+  )),
+  tibble::as_tibble(count_row(
+    "Persons",
+    grp_counts$persons,
+    dplyr::n_distinct(owner_base$xwaveid)
+  ))
+)
+
+tab <- bind_rows(body, n_rows)
+n_stat_rows <- length(stat_vars)
+header <- c("", as.vector(rbind(rep("Mean", 4), rep("SD", 4))), "Mean", "SD")
+
+sig <- pvals |>
+  filter(!is.na(p), p < 0.10) |>
+  mutate(
+    i = match(variable, stat_vars),
+    j = 2 * match(grp, grp_levels)
+  ) |>
+  filter(!is.na(i), !is.na(j))
+
+tbl <- tt(setNames(tab, header), width = c(0.20, rep(0.08, 10))) |>
+  group_tt(
+    j = list(
+      "Native-born" = 2:3,
+      "MES" = 4:5,
+      "MNES (high English)" = 6:7,
+      "MNES (low English)" = 8:9,
+      "All owners" = 10:11
+    )
+  ) |>
+  style_tt(j = 2:11, align = "r") |>
+  style_tt(i = 0, bold = FALSE, align = "c")
+
+for (k in seq_len(nrow(sig))) {
+  tbl <- style_tt(tbl, i = sig$i[k], j = sig$j[k], bold = TRUE)
+}
+
+tbl |>
+  style_tt(i = n_stat_rows, line = "b", line_width = 0.05)
+```
+
+::: {.notes}
+*Notes:* This table reports descriptive statistics for business owners (employers and own-account workers) by origin group, pooled over owner person-years in HILDA waves 1 to 24. Mean and SD denote the mean and standard deviation of each variable within each group. Market income denotes annual labour and business income, in dollars. Bolded figures indicate group means that differ significantly from those of native-born owners. Significance is assessed by regressing each variable on a group indicator, estimated on the pooled person-years of the respective migrant group and native-born owners, with standard errors clustered at the individual level. Low English proficiency and years since arrival are not tested, as neither is defined for the native-born. Person-years denotes owner person-years and Persons the number of distinct owners. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{=typst}
+    ]
+  ]
+]
+```
+
+{{< pagebreak >}}

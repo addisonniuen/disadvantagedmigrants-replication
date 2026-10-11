@@ -1,0 +1,267 @@
+# ==============================================================================
+# variablesummary.R
+#
+# Variable dictionary: every source and derived variable used in the analysis,
+# with its description, type and range. Optional; not part of 00_runall.R.
+# Run after 01_setup.R. Writes project/output/tables/variable_summary.csv.
+# ==============================================================================
+
+var_table <- tribble(
+  ~Variable,                                          ~Description,                                                                                  ~Type,                 ~`Range / Levels`,
+  # -- Identifiers --
+  "xwaveid",                                          "Person identifier (cross-wave)",                                                              "ID / Character",      "-",
+  "wave",                                             "Wave number",                                                                                 "Integer",             "1 to 24",
+  "year",                                             "Calendar year of the wave",                                                                   "Integer",             "2001 to 2024",
+ 
+  # -- Geography --
+  "state_hhstate",                                    "State of residence (hhstate); regression control and PMM predictor",                          "Categorical",         "NSW, Vic, Qld, SA, WA, Tas, NT, ACT",
+  "remoteness_hhs3ra",                                "Remoteness area (hhs3ra); source for remoteness_collapsed",                                   "Categorical",         "Major cities, Inner regional, Outer regional, Remote, Very remote, Migratory/offshore/shipping, No usual address",
+  "disadvantage_decile_hhs3add",                      "SEIFA decile of relative socio-economic disadvantage 2021 (hhs3add); source for seifa_decile", "Ordered categorical", "Decile 1 (most disadvantaged) to Decile 10 (least disadvantaged)",
+ 
+  # -- Demographics --
+  "age_hgage",                                        "Age as at 30 June of the wave (hgage); control, sample filter (18 to 64) and birth-year input", "Integer",           "Years, >= 0",
+  "sex_hgsex",                                        "Sex (hgsex); control and PMM predictor",                                                      "Categorical",         "Male, Female",
+  "marital_status_mrcurr",                            "Current marital status (mrcurr); PMM predictor for arrival year",                             "Categorical",         "Legally married, De facto, Separated, Divorced, Widowed, Never married and not de facto",
+ 
+  # -- Ancestry and migration --
+  "birthplace_group_anbcob",                          "Country of birth, broad group (anbcob); LOCF-filled. Source for migrant, birthplace_group and origin_group", "Categorical", "Australia, Main English-speaking country, Other country",
+  "english_proficiency_aneab",                        "How well speaks English, waves 2 onward (aneab); asked only of LOTE speakers, so non-response is a structural skip not true missingness", "Categorical", "Speaks very well, well, not well, not at all",
+  "english_proficiency_hgeab",                        "How well speaks English, wave 1 only (hgeab); wave-1 counterpart of aneab",                   "Categorical",         "Speaks very well, well, not well, not at all",
+  "english_first_lang_anengf",                        "English first language (anengf); LOCF-filled. Source for english_first_language",             "Categorical",         "English is first language, Non-English first language",
+  "speaks_lote_home_anlote",                          "Speaks a language other than English at home (anlote); identifies the structural skip in the proficiency items", "Categorical", "Yes, No",
+  "english_reading_skill_sktarea",                    "Self-rated English reading skill vs a typical Australian (sktarea); second input to low_english", "Ordered categorical", "0 (very poor) to 10 (very good); 5 = about average",
+  "year_arrival_aust_anyoa",                          "Year first came to Australia to live (anyoa); LOCF-filled, then PMM-imputed into year_arrival_used", "Integer",         "Calendar year",
+ 
+  # -- Education --
+  "highest_education_achieved_edhigh1",               "Highest education achieved (edhigh1); control and PMM predictor. 'Undetermined' is recoded to NA in 03", "Categorical",   "1 = Postgraduate (Masters or Doctorate); 2 = Graduate Diploma or Certificate; 3 = Bachelor or Honours; 4 = Advanced Diploma or Diploma; 5 = Certificate III or IV; 8 = Year 12; 9 = Year 11 or below; 10 = Not stated / Undetermined (set to NA)",
+ 
+  # -- Employment status --
+  "emp_status_detail_esempdt",                        "Detailed employment status (esempdt); defines the owner, employee and analysis-sample splits", "Categorical",         "Employee; Employee of own business with/without employees; Employer/self-employed with/without employees; Unpaid family worker",
+  "lf_status_detail_esdtl",                           "Detailed labour force status (esdtl); defines is_unemployed and is_not_in_labour_force",     "Categorical",         "Employed FT/PT; Unemployed looking FT/PT; NILF marginally/not marginally attached; Employed hours unknown",
+ 
+  # -- Industry and occupation --
+  "industry_19categories_jbmi61",                     "Industry, 1-digit ANZSIC 2006 (jbmi61); cell definition for the headline LOO shares, and the fixed effect and clustering dimension", "Categorical", "ANZSIC 2006 1-digit codes (19 divisions)",
+  "industry_sparsecategories_jbmi62",                 "Industry, detailed ANZSIC 2006 (jbmi62); cell definition for the robustness LOO shares",     "Categorical",         "ANZSIC 2006 detailed codes",
+  "occupation_1dig_jbmo61",                           "Occupation, 1-digit ANZSCO (jbmo61); control and source for occupation_agent_plausible_subgroup", "Categorical",      "ANZSCO 1-digit codes",
+ 
+  # -- Firm size and type --
+  "workplace_size_jbmwpsz",                           "Employees at place of work, waves 1 to 4 only (jbmwpsz)",                                     "Categorical",         "<5, 5-9, 10-19, 20-49, 50-99, 100-199, 200-499, 500+, plus two don't-know bands",
+  "workplace_size_jbmwps",                            "Employees at place of work, waves 5 to 21 only (jbmwps)",                                     "Categorical",         "Self only, 2-4, 5-9, 10-19, 20-49, 50-99, 100-199, 200-499, 500+, plus two don't-know bands",
+  "employer_size_jbmemsz",                            "Total employer size across Australia, waves 1 to 21 only (jbmemsz)",                          "Categorical",         "<20, 20-99, 100-499, 500-999, 1000-4999, 5000-19999, 20000+, plus two don't-know bands",
+  "employer_size_jbmems2",                            "Total employer size across Australia, waves 22 to 24 only (jbmems2)",                         "Categorical",         "1, 2-4, 5-9, 10-19, 20-99, 100-499, 500-999, 1000-4999, 5000-19999, 20000+, plus three don't-know bands",
+  "multi_site_jbmmwp",                                "Employer operates from more than one location in Australia (jbmmwp)",                         "Categorical",         "More than one location, One location",
+  "employer_sector_jbmmply",                          "Type of employer/business, waves 3 to 24 (jbmmply)",                                          "Categorical",         "Private for profit, Govt business enterprise/statutory authority, Other commercial, Private not for profit, Other governmental, Other non-commercial",
+  "employer_sector_jbmmplr",                          "Type of employer/business, wave 2 (jbmmplr); same question as jbmmply",                       "Categorical",         "As for jbmmpl",
+  "employer_sector_jbmmpl",                           "Type of employer/business, wave 1 (jbmmpl); same question as jbmmply. Supplies the factor levels for the harmonised employer_sector", "Categorical", "Private sector for profit, Private sector non-profit, Govt business enterprise/commercial statutory authority, Other commercial, Other government organisation, Other non-commercial",
+ 
+  # -- Job characteristics --
+  "casual_perm_jbcasab",                              "Casual or permanent employee (jbcasab); wage-equation control",                               "Categorical",         "Casual employee, Permanent",
+  "union_employeeassociation_membership_jbmtuea",     "Union or employee-association membership (jbmtuea), derived variable; don't-know coded as no. Wage-equation control", "Categorical", "Yes, No",
+  "tenure_current_occ_jbocct",                        "Tenure in current occupation, years (jbocct); wage-equation control",                         "Numeric",             "Years, >= 0",
+  "tenure_current_employer_jbempt",                   "Tenure with current employer, years (jbempt); wage-equation control",                         "Numeric",             "Years, >= 0",
+ 
+  # -- Housing --
+  "housing_tenure_hstenr",                            "Housing tenure type (hstenr); source for is_homeowner",                                       "Categorical",         "Own/currently paying off mortgage, Rent, Rent-free, Life tenure",
+ 
+  # -- Financial stress items (SCQ) --
+  "cannot_pay_bills_on_time_fiprbeg",                 "Could not pay electricity, gas or telephone bills on time (fiprbeg); input to cashflow_problem", "Categorical",       "Yes, No",
+  "cannot_pay_mortgage_rent_on_time_fiprbmr",         "Could not pay mortgage or rent on time (fiprbmr); input to cashflow_problem",                 "Categorical",         "Yes, No",
+  "asked_financial_help_friends_family_fiprbfh",      "Asked friends or family for financial help (fiprbfh); input to cashflow_problem",             "Categorical",         "Yes, No",
+  "went_without_meals_fiprbwm",                       "Went without meals (fiprbwm); input to hardship",                                             "Categorical",         "Yes, No",
+  "unable_heat_home_fiprbuh",                         "Unable to heat home (fiprbuh); input to hardship",                                            "Categorical",         "Yes, No",
+  "pawned_or_sold_something_fiprbps",                 "Pawned or sold something (fiprbps); input to hardship",                                       "Categorical",         "Yes, No",
+  "asked_financial_help_welfare_community_fiprbwo",   "Asked a welfare or community organisation for help (fiprbwo); input to hardship",             "Categorical",         "Yes, No",
+ 
+  # -- Wages, hours and income --
+  "wage_weekly_main_job_wscmei",                      "Current weekly gross wages and salary, main job; imputed, top-coded (wscmei)",                "Numeric",             "$ >= 0 (HILDA top-coded)",
+  "wage_weekly_all_job_wscei",                        "Current weekly gross wages and salary, all jobs; imputed, top-coded (wscei)",                 "Numeric",             "$ >= 0 (HILDA top-coded)",
+  "hours_weekly_main_job_jbmhruc",                    "Hours per week usually worked in main job (jbmhruc)",                                         "Numeric",             "Hours >= 0",
+  "hours_weekly_all_job_jbhruc",                      "Hours per week usually worked in all jobs (jbhruc)",                                          "Numeric",             "Hours >= 0",
+  "fy_income_pos_tifefp",                             "Financial-year gross regular income, imputed, positive values, top-coded (tifefp)",           "Numeric",             "$ >= 0",
+  "fy_income_neg_tifefn",                             "Financial-year gross regular income, imputed, negative values, top-coded (tifefn)",           "Numeric",             "$, negative component",
+  "fy_biz_income_pos_bifip",                          "Financial-year business income, imputed, positive values, top-coded (bifip)",                 "Numeric",             "$ >= 0",
+  "fy_biz_income_neg_bifin",                          "Financial-year business income, imputed, negative values, top-coded (bifin)",                 "Numeric",             "$, negative component",
+  "fy_gross_wages_salaries_wsfei",                    "Financial-year gross wages and salary income, all jobs, top-coded (wsfei)",                   "Numeric",             "$ >= 0 (HILDA top-coded)",
+ 
+  # -- Survey weights --
+  "responding_person_longitudinal_weight_lnwtrp",     "Responding-person longitudinal weight (lnwtrp); used only for the sensitivity check in Table B.10, where it replaces hhwtrp in the Type 0 owner shares", "Numeric", "> 0",
+  "respondingperson_crosssectional_weight_hhwtrp",    "Responding-person cross-sectional weight (hhwtrp); weights each owner in the leave-one-out owner shares",  "Numeric",  "> 0",
+ 
+  # -- External deflators (joined from cpi_lookup, ABS 6401017) --
+  "cpi_deflator_sep",                                 "September-quarter CPI relative to the latest survey year; deflates point-in-time hourly wages", "Numeric",           "> 0, = 1 in the base year",
+  "cpi_deflator_fy",                                  "Financial-year average CPI relative to the latest financial year; deflates financial-year incomes", "Numeric",       "> 0, = 1 in the base year",
+ 
+  # ============================================================================
+  # DERIVED VARIABLES
+  # ============================================================================
+ 
+  # -- Migration, origin and English proficiency --
+  "migrant",                                          "1 if born outside Australia, else 0; NA if birthplace missing. From birthplace_group_anbcob != australia", "Binary (0/1)", "0, 1, NA",
+  "birthplace_group",                                 "B_i: three-level birthplace group, Australian-born as the reference level",                   "Categorical",         "australia, main english-speaking country, other country",
+  "english_first_language",                           "1 if anengf = English is first language, else 0; NA if missing",                              "Binary (0/1)",        "0, 1, NA",
+  "english_proficiency",                              "Spoken English proficiency harmonised across waves: hgeab in wave 1, aneab from wave 2 onward", "Categorical",        "Speaks very well, well, not well, not at all",
+  "english_reading_skill_num",                        "Numeric version of english_reading_skill_sktarea, so the < 4 cutoff can be applied",          "Numeric",             "0 to 10, NA",
+  "low_english",                                      "Wave-level: 0 for non-LOTE respondents (structural skip); else 1 if speaks English not well or not at all, or self-rated reading skill < 4; NA only when both proficiency items are missing", "Binary (0/1)", "0, 1, NA",
+  "low_english_timeinvariant",                        "Person-level modal value of low_english across observed waves; used to build G because raw wave-to-wave transitions are near-symmetric cutoff noise", "Binary (0/1)", "0, 1, NA",
+  "migrant_low_eng",                                  "1 if migrant = 1 AND low_english = 1, else 0; NA if either missing. Coarse two-way parameterisation, wave-level", "Binary (0/1)", "0, 1, NA",
+  "migrant_low_eng_baseline",                         "As migrant_low_eng but built on low_english_timeinvariant, so it does not move within person", "Binary (0/1)",       "0, 1, NA",
+  "origin_group",                                     "G_i: disjoint origin-proficiency partition. Proficiency splits the other-country group only, since the native and MES low-proficiency cells are effectively empty", "Categorical", "native, mes, mnes_higheng, mnes_loweng",
+  "origin_group_3",                                   "origin_group with the two MNES cells collapsed; coarser alternative partition",               "Categorical",         "native, mes, mnes",
+  "year_arrival_used",                                "Year of first arrival: reported value where available, else the PMM draw censored to lie between birth year and year of first interview", "Integer", "Calendar year, NA for the Australian-born",
+  "arrival_imputed",                                  "1 if year_arrival_used comes from the PMM draw rather than a reported value; used to report estimates with and without imputed cases", "Binary (0/1)", "0, 1, NA",
+  "years_in_aus",                                     "year minus year_arrival_used, when arrival year is valid and not after the wave year; else NA", "Numeric",            "Years, >= 0, else NA",
+ 
+  # -- Exposure weights --
+  "theta_type0",                                      "No-decay exposure weight: 1 for every migrant with a valid arrival year, 0 for the Australian-born. Equivalent to lambda = 0", "Numeric", "0, 1, NA",
+  "theta_type1",                                      "Pooled-lambda exposure weight exp(-lambda_mean * years_in_aus), 0 for the Australian-born. lambda_mean is the grid-search minimiser of the wage-equation MSE", "Numeric", "0 to 1, NA",
+  "theta_type2",                                      "Origin-specific exposure weight: exp(-lambda_mes * years_in_aus) for MES origins and exp(-lambda_other * years_in_aus) for MNES origins, 0 for the Australian-born", "Numeric", "0 to 1, NA",
+ 
+  # -- Employment status --
+  "owner_with_employees",                             "1 if esempdt is employee-of-own-business-with-employees or employer/self-employed-with-employees (codes 2 or 4), else 0", "Binary (0/1)", "0, 1",
+  "own_account_worker",                               "1 if esempdt is either of the without-employees owner categories (codes 3 or 5), else 0",     "Binary (0/1)",        "0, 1",
+  "is_owner",                                         "1 if esempdt is any of the four owner categories (codes 2 to 5), else 0",                     "Binary (0/1)",        "0, 1",
+  "is_employee",                                      "1 if esempdt = employee (code 1), else 0",                                                    "Binary (0/1)",        "0, 1",
+  "is_unemployed",                                    "1 if esdtl is either unemployed category, else 0",                                            "Binary (0/1)",        "0, 1",
+  "is_not_in_labour_force",                           "1 if esdtl is either not-in-the-labour-force category, else 0",                               "Binary (0/1)",        "0, 1",
+  "is_owner_l1",                                      "is_owner at wave t-1, NA unless the preceding row is genuinely wave t-1",                     "Binary (0/1)",        "0, 1, NA",
+  "entry_owner",                                      "1 if the individual becomes an owner between t-1 and t; NA unless at risk (non-owner at a genuine t-1)", "Binary (0/1)", "0, 1, NA",
+  "exit_owner",                                       "1 if the individual ceases to be an owner between t-1 and t; NA unless at risk (owner at a genuine t-1)", "Binary (0/1)", "0, 1, NA",
+ 
+  # -- Occupation and sector --
+  "occupation_agent_plausible_subgroup",              "Main-job occupation grouped by whether an employee plausibly holds the regulatory, linguistic or commercial advantage over a migrant owner; residual occupations are the reference level", "Categorical", "other occupations, agent-plausible",
+  "employer_sector",                                  "Harmonised employer type: jbmmply coalesced with jbmmplr then jbmmpl, on the jbmmpl levels",  "Categorical",         "See employer_sector_jbmmpl",
+  "employer_sector_source",                           "Which mnemonic supplied employer_sector, kept so any sector result can be checked against the wave block it came from", "Categorical", "jbmmply, jbmmplr, jbmmpl, NA",
+ 
+  # -- Firm size and structure --
+  "small_wp",                                         "1 if workplace is under ~20 employees (waves 1 to 4 via jbmwpsz, waves 5+ via jbmwps; includes don't-know-but-fewer-than-20)", "Binary (0/1)", "0, 1, NA",
+  "large_wp",                                         "1 if workplace is in the 20-plus bands (20-49 up to 500+, includes don't-know-but-20-or-more)", "Binary (0/1)",      "0, 1, NA",
+  "employer_size_nat",                                "Harmonised national employer size: jbmemsz (waves 1 to 21) coalesced with jbmems2 (waves 22 to 24); both ask the number of people employed at locations throughout Australia", "Character", "See jbmemsz and jbmems2 bands",
+  "employer_size_nat_source",                         "Which mnemonic supplied employer_size_nat, kept so any size result can be checked against the wave block it came from", "Character", "jbmemsz, jbmems2, NA",
+  "large_nat",                                        "1 if harmonised national employer size is 500 or more (500-999 up to 20000+), 0 if below; NA for 'don't know, but 100 or more', which straddles the cutoff", "Binary (0/1)", "0, 1, NA",
+  "is_multisite",                                     "1 if jbmmwp = operates from more than one location in Australia",                             "Binary (0/1)",        "0, 1, NA",
+  "is_singlesite",                                    "1 if jbmmwp = operates from one location in Australia",                                       "Binary (0/1)",        "0, 1, NA",
+  "small_single_site",                                "1 if small_wp AND single-site; NA if small_wp or jbmmwp missing. Headline firm-type indicator", "Binary (0/1)",      "0, 1, NA",
+  "chain_like",                                       "1 if large_wp AND large_nat AND multi-site; 0 for single-site employers, for whom HILDA does not ask national employer size; NA if workplace size or the multi-location indicator is missing", "Binary (0/1)", "0, 1, NA",
+  "small_site_chain",                                 "1 if small_wp AND multi-site; NA if small_wp or jbmmwp missing",                              "Binary (0/1)",        "0, 1, NA",
+  "size_missing_flag",                                "1 if the wave is in no_size_waves (22 to 24, no firm-size data), else 0",                     "Binary (0/1)",        "0, 1",
+ 
+  # -- Hourly wages --
+  "hrwge_main",                                       "Raw main-job hourly wage = wage_weekly_main_job_wscmei / hours_weekly_main_job_jbmhruc when both > 0, else NA", "Numeric", "> 0, else NA",
+  "hrwge_all",                                        "Raw all-jobs hourly wage = wage_weekly_all_job_wscei / hours_weekly_all_job_jbhruc when both > 0, else NA", "Numeric", "> 0, else NA",
+  "hrwge_main_clean",                                 "hrwge_main kept only if >= $1/hr, else NA (floor)",                                           "Numeric",             ">= 1, else NA",
+  "hrwge_all_clean",                                  "hrwge_all kept only if >= $1/hr, else NA (floor)",                                            "Numeric",             ">= 1, else NA",
+  "hrwge_main_inflation_adjusted",                    "hrwge_main_clean deflated by cpi_deflator_sep",                                               "Numeric",             "Real $/hr",
+  "hrwge_all_inflation_adjusted",                     "hrwge_all_clean deflated by cpi_deflator_sep",                                                "Numeric",             "Real $/hr",
+  "log_hrwge",                                        "Log of the real main-job hourly wage where it is >= $1/hr, else NA; headline Block 1 outcome and the lambda-calibration objective", "Numeric", "Real, log scale",
+  "wage_p20",                                         "Year-specific 20th percentile of the real main-job hourly wage among employees; cutoff behind is_low_wage", "Numeric",  "Real $/hr",
+  "is_low_wage",                                      "1 if the real main-job hourly wage is at or below wage_p20; 0 for owners and the non-employed so the status dummies never overlap", "Binary (0/1)", "0, 1, NA",
+ 
+  # -- Annual incomes --
+  "income_regular",                                   "Net financial-year regular income = fy_income_pos_tifefp - fy_income_neg_tifefn (wages, business, investment and transfers)", "Numeric", "Can be negative",
+  "income_business",                                  "Net financial-year business income = fy_biz_income_pos_bifip - fy_biz_income_neg_bifin",      "Numeric",             "Can be negative",
+  "income_labour_and_business",                       "Annual labour plus business income = fy_gross_wages_salaries_wsfei + income_business",        "Numeric",             "Can be negative",
+  "income_regular_inflation_adjusted",                "income_regular deflated by cpi_deflator_fy",                                                  "Numeric",             "Real $, can be negative",
+  "income_business_inflation_adjusted",               "income_business deflated by cpi_deflator_fy",                                                 "Numeric",             "Real $, can be negative",
+  "income_labour_and_business_inflation_adjusted",    "income_labour_and_business deflated by cpi_deflator_fy",                                      "Numeric",             "Real $, can be negative",
+  "income_labour_and_business_inflation_adjusted_log", "Log of real labour plus business income among positive values, else NA; headline Block 2 outcome", "Numeric",       "Real, log scale",
+  "has_positive_income",                              "1 if real labour plus business income is strictly positive; extensive-margin outcome",        "Binary (0/1)",        "0, 1, NA",
+  "income_p10",                                       "Year-specific 10th percentile of real labour plus business income; cutoff behind is_bottom_decile_income", "Numeric", "Real $",
+  "is_bottom_decile_income",                          "1 if real labour plus business income is at or below income_p10",                             "Binary (0/1)",        "0, 1, NA",
+  "income_volatility",                                "Trailing five-wave within-person standard deviation of real labour plus business income (>= 3 observations)", "Numeric", ">= 0, else NA",
+ 
+  # -- Liquidity, collateral and place --
+  "cashflow_problem",                                 "1 if any moderate SCQ cash-flow item is yes (bills, mortgage or rent, asked friends or family)", "Binary (0/1)",     "0, 1, NA",
+  "hardship",                                         "1 if any severe SCQ hardship item is yes (went without meals, could not heat home, pawned or sold something, asked a welfare organisation)", "Binary (0/1)", "0, 1, NA",
+  "liquidity_constraint",                             "1 if cashflow_problem or hardship is 1",                                                      "Binary (0/1)",        "0, 1, NA",
+  "is_homeowner",                                     "1 if housing tenure is own or currently paying off a mortgage; collateral proxy",             "Binary (0/1)",        "0, 1, NA",
+  "seifa_decile",                                     "Numeric SEIFA decile parsed from disadvantage_decile_hhs3add",                                "Numeric",             "1 to 10",
+  "remoteness_collapsed",                             "remoteness_hhs3ra with outer regional and remote merged into one level",                      "Categorical",         "Major cities, Inner regional, Outer regional/remote, Very remote, Migratory/offshore/shipping, No usual address",
+ 
+  # -- Panel structure flags --
+  "waves_adjacent",                                   "1 if the person's observed waves form an unbroken run",                                       "Binary (0/1)",        "0, 1",
+  "in_all_waves",                                     "1 if the person is observed in every wave of the panel",                                      "Binary (0/1)",        "0, 1"
+)
+ 
+ 
+# --- Leave-one-out owner shares ----------------------------------------------
+ 
+loo_suffixes <- c(
+  "1d_type0", "2d_type0",   # no decay
+  "1d_type1", "2d_type1",   # pooled lambda
+  "1d_type2", "2d_type2"    # origin-specific lambda
+)
+ 
+loo_stems <- tribble(
+  ~stem,                 ~Description,                                                                                              ~Type,     ~`Range / Levels`,
+  "loo_mes",             "S^MES: LOO share of cell owners born in a main English-speaking country, exposure-weighted",               "Numeric", "0 to 1, NA",
+  "loo_mnes",            "S^MNES: LOO share of cell owners born outside the main English-speaking group, both proficiency cells",    "Numeric", "0 to 1, NA",
+  "loo_mnes_higheng",    "S^MNESHighEng: LOO share of cell owners born elsewhere with high English proficiency",                     "Numeric", "0 to 1, NA",
+  "loo_mnes_loweng",     "S^MNESLowEng: LOO share of cell owners born elsewhere with low English proficiency",                       "Numeric", "0 to 1, NA",
+  "loo_migrant_share",   "LOO share of cell owners who are migrants of any origin",                                                  "Numeric", "0 to 1, NA",
+  "loo_native_share",    "LOO share of cell owners who are Australian-born; complement of loo_migrant_share",                        "Numeric", "0 to 1, NA",
+  "loo_loweng_share",    "Duplicate of loo_mnes_loweng under the share naming",                                                      "Numeric", "0 to 1, NA",
+  "loo_higheng_share",   "Duplicate of loo_mnes_higheng under the share naming",                                                     "Numeric", "0 to 1, NA",
+  "n_owners",            "Leave-one-out count of weighted owners in the industry x wave cell backing the shares",                    "Integer", ">= 0"
+)
+ 
+loo_labels <- c(
+  "1d" = "1-digit ANZSIC cells", "2d" = "detailed ANZSIC cells",
+  "type0" = "no decay", "type1" = "pooled lambda", "type2" = "origin-specific lambda"
+)
+ 
+loo_rows <- tidyr::expand_grid(loo_stems, suffix = loo_suffixes) |>
+  mutate(
+    ind  = loo_labels[sub("_.*", "", suffix)],
+    dec  = loo_labels[sub(".*_", "", suffix)],
+    Variable = paste0(stem, "_", suffix),
+    Description = paste0(Description, ". Computed on ", ind, " with ", dec, " weights."),
+    .keep = "unused"
+  ) |>
+  select(Variable, Description, Type, `Range / Levels`)
+ 
+var_table <- bind_rows(var_table, loo_rows)
+ 
+ 
+# --- Analysis-stage variables --------------------------------------
+ 
+analysis_rows <- tribble(
+  ~Variable,                                          ~Description,                                                                                  ~Type,                 ~`Range / Levels`,
+  # -- Block 1: data_regression_1 --
+  "english_speaking_background",                      "Two-level collapse of origin_group: native and MES against both MNES cells. Coarse language-background split used alongside the four-way partition", "Categorical", "english, non-english",
+  # -- Block 2: data_regression_2 --
+  "is_agent_plausible",                               "Factor 0/1 version of occupation_agent_plausible_subgroup, for use in interactions",          "Factor (0/1)",        "0, 1, NA",
+  "income_p10_earners",                               "Year-specific 10th percentile of real labour plus business income among positive earners only; cutoff behind is_bottom_decile_earners", "Numeric", "Real $",
+  "is_bottom_decile_earners",                         "1 if real labour plus business income is positive and at or below income_p10_earners, NA for the non-earning. Earners-only counterpart of is_bottom_decile_income, so downside risk is not the complement of has_positive_income", "Binary (0/1)", "0, 1, NA",
+  # -- Block 3: panel_block3 / data_regression_3 --
+  "highest_education_achieved_edhigh1_l1",            "Highest education at wave t-1, contiguous lag",                                               "Categorical",         "As for edhigh1, NA",
+  "unemployed_l1",                                    "is_unemployed at wave t-1, contiguous lag",                                                   "Binary (0/1)",        "0, 1, NA",
+  "nilf_l1",                                          "is_not_in_labour_force at wave t-1, contiguous lag",                                          "Binary (0/1)",        "0, 1, NA",
+  "low_wage_l1",                                      "is_low_wage at wave t-1, contiguous lag",                                                     "Binary (0/1)",        "0, 1, NA",
+  "liquidity_l1",                                     "liquidity_constraint at wave t-1, contiguous lag",                                            "Binary (0/1)",        "0, 1, NA",
+  "marital_status_mrcurr_l1",                         "Marital status at wave t-1, contiguous lag",                                                  "Categorical",         "As for mrcurr, NA",
+  "seifa_decile_l1",                                  "seifa_decile at wave t-1, contiguous lag",                                                    "Numeric",             "1 to 10, NA",
+  "remoteness_collapsed_l1",                          "remoteness_collapsed at wave t-1, contiguous lag",                                            "Categorical",         "As for remoteness_collapsed, NA",
+  "remoteness_hhs3ra_l1",                             "remoteness_hhs3ra at wave t-1, contiguous lag; the version actually entered in the entry equation", "Categorical",    "As for hhs3ra, NA",
+  "casual_perm_jbcasab_l1",                           "casual_perm_jbcasab at wave t-1, contiguous lag; constructed but not selected into data_regression_3", "Categorical",  "Casual employee, Permanent, NA",
+  "push_l1",                                          "Weak labour-market position at t-1: 1 if any of unemployed_l1, nilf_l1 or low_wage_l1 is 1. Push factor into ownership", "Binary (0/1)", "0, 1, NA",
+  "industry_19categories_jbmi61_fe",                  "industry_19categories_jbmi61 with NA promoted to an explicit level, so the non-employed at t are retained in the at-risk set rather than dropped by the industry fixed effect", "Categorical", "19 ANZSIC divisions plus 'not employed at t'"
+)
+ 
+var_table <- bind_rows(var_table, analysis_rows)
+ 
+ 
+# --- Render -------------------------------------------------------------------
+n_source <- which(var_table$Variable == "migrant") - 1L
+n_derived <- which(var_table$Variable == analysis_rows$Variable[1]) - 1L
+ 
+var_table |>
+  kableExtra::kbl(caption = "Variables used or derived", format = "html", align = c("l", "l", "l", "l")) |>
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 12) |>
+  kableExtra::pack_rows("Source HILDA Variables (renamed)", 1, n_source) |>
+  kableExtra::pack_rows("Derived Variables (03)", n_source + 1, n_derived) |>
+  kableExtra::pack_rows("Analysis-Stage Variables (05 to 07)", n_derived + 1, nrow(var_table))
+ 
+# The variable dictionary is a table, so it is saved with the other tables
+write.csv(var_table, file.path(directory_output_tables, "variable_summary.csv"), row.names = FALSE)
+
+ 

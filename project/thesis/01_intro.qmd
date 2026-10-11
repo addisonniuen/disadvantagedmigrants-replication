@@ -1,0 +1,135 @@
+# Introduction {#sec-intro}
+
+Labour regulation in most developed economies rests on a familiar premise that employers hold bargaining power over workers through their ability to set wages, dictate terms and replace staff [@manning_monopsony_2003]. Australian workplace law reflects this premise by placing strict liability for compliance on the employer. Yet the premise may fail in small businesses run by migrants with limited English. Such owners operate with thin margins and little administrative capacity, and they rely on employees, contractors and advisers for the language skills and institutional knowledge needed to run the business. If this reliance shifts de facto bargaining power towards workers, regulation designed to protect employees may, in part of the small-business sector, shift cost and risk onto owners who are themselves economically vulnerable. Whether it does matters for small-business regulation, migrant integration policy and the enforcement of workers' entitlements.
+
+This paper asks whether migrant ownership and limited English proficiency weaken the bargaining position of small-business owners relative to their workers, and whether any such reversal leaves a detectable imprint on labour market outcomes. We formalise the mechanism in a model of owner–agent bargaining under compliance risk, which yields three testable implications, and test them with twenty-four waves of the Household, Income and Labour Dynamics in Australia (HILDA) Survey. If workers hold more bargaining power, employees of small migrant-owned workplaces should earn more, migrant owners should earn less or bear more income risk than comparable employees of their own origin, and entry into ownership should reflect weak outside options. The central difficulty is that HILDA, like most household surveys, does not identify respondents' employers. We therefore measure each worker's exposure to migrant ownership by the share of business owners in their industry and year who are migrants, separately by English proficiency, and ask how the wage gap between small independent and larger workplaces in the same industry and year changes with this share. We compare owners with employees of the same origin on the level and the risk of their income, and relate entry into ownership to each person's labour market position before entry.
+
+We document three findings. First, employees of small single-site workplaces earn about 11 per cent less than comparable employees of larger workplaces in the same industry and year. This penalty narrows to about 2 per cent where a third of owners are non-English-speaking migrants with good English, but not where owners with limited English are common, the group for which the framework predicts the largest effect. Second, in every origin group, owners with employees earn more than employees of their own origin but face far more volatile income; among the native-born, owners' income volatility exceeds employees' by about 27 percentage points. We detect no migrant-specific difference in this trade-off. Third, entry into ownership follows unemployment and low pay, and for low-English migrants unemployment raises the odds of entry about four times as much as for the native-born, with a push that persists two years before entry. Together, the findings offer little support for a direct reversal of power, but they show that migrants with limited English enter ownership from weak positions and then face the high income risk that ownership brings in every group.
+
+This paper contributes to three literatures. First, it brings two literatures on migrants together at the point where they meet. Research on migrant workers shows how migrants are disadvantaged as employees, through sorting into lower-paying jobs [@han_wage_2024; @hermansen_immigrantnative_2025] and widespread underpayment [@berg_wage_2017]. Research on migrant entrepreneurship asks why migrants become self-employed, often out of necessity [@azoulay_2022; @fairlie_2020]. Neither examines the employment relationship once the migrant is the employer. The few studies that do are qualitative case studies of dependency between migrant owners and their local staff [@cooke_2022; @david_2025; @david_2026] or typologies of power within firms [@audretsch_2023]. To our knowledge, this paper provides the first quantitative test, in nationally representative data, of whether the informational disadvantage of migrant owners shifts the distribution of surplus between owners and their workers. It also separates language barriers from migrant status, which existing work typically pools.
+
+Second, we propose a measure of exposure to migrant ownership for settings in which employers and employees cannot be linked. The measure is a survey-weighted, leave-one-out share of business owners in each industry and year, by origin and English proficiency, with an optional decay by years in Australia whose rate we select by cross-validation. Combined with workplace types that separate independent small businesses from small sites of chains, and with a comparison against those chain sites, it allows the wage effects of migrant ownership to be studied in any household panel that records industry and workplace size.
+
+Third, we extend the study of necessity entrepreneurship beyond the point of entry. Existing work explains why migrants become self-employed; we follow them into ownership and compare their income and income risk with those of employees of the same origin, the comparison that isolates the return to ownership from origin gaps that already exist among employees. We show that the push into ownership from unemployment is stronger and more persistent for low-English migrants, and we test it against anticipation of entry and stable personal traits. This connects the motives for entry with their consequences. The migrants with the weakest alternatives enter ownership, and once they do, they face the same trade-off between higher income and higher risk as other owners.
+
+Our findings are consistent with existing evidence on self-employment and migrant entrepreneurship. That owners with employees earn more than employees while own-account workers earn less mirrors evidence that owners of incorporated businesses out-earn employees while owners of small unincorporated businesses earn considerably less [@levine_smart_2017], and it helps reconcile our results with studies that pool all the self-employed and conclude that self-employment does not pay [@hamilton_does_2000]. The push into ownership accords with research that defines necessity entrepreneurship by prior work status [@fairlie_2020], and its persistence among low-English migrants suggests that their entry reflects a sustained lack of alternatives, not a single spell of unemployment. Finally, because the wage penalty narrows where English-proficient migrant owners are common but not where owners have limited English, migrant ownership appears to shape pay through industry pay structures or ethnic networks, not through owners' language barriers.
+
+Australia is an informative setting for this test. Migrants account for a substantial share of its small-business sector, which operates under one of the more actively enforced workplace relations frameworks among comparable economies [@wright_2020]. Under the Fair Work Act 2009 (Cth), penalties for underpayment fall on the employer regardless of intent or knowledge, while employees can leave the relationship without residual liability, which is precisely the asymmetry that could shift leverage away from an owner who relies on better-informed workers. The mechanism rests on strict compliance regimes and migrant business density, not on features unique to Australia, so the findings should apply, at least qualitatively, to other economies with large migrant-owned small-business sectors, such as the United Kingdom, the United States and Canada.
+
+The paper proceeds as follows. @sec-conceptual-framework sets out the model of owner–agent bargaining under compliance risk. @sec-data describes the data and the owner-share measure, and @sec-methodology the estimating equations. @sec-res reports the results, @sec-discussion discusses them and their limitations, and @sec-conclusion concludes.
+
+# Conceptual Framework {#sec-conceptual-framework}
+
+We propose viewing the small migrant-owned firm as a constrained agent  facing four structural sources of asymmetry. 
+
+1. *Information asymmetry.* Employees, contractors and external advisors often possess more complete knowledge of regulatory compliance, local institutional norms and communication channels than the owner does. Where the owner faces language barriers or general unfamiliarity with local institutions, they must delegate operational and compliance decisions to agents whose local expertise they cannot independently verify.
+
+2. *Outside options.* Differences in mobility reshape the relative bargaining strength of workers and owners. Skilled employees can generally re-enter the broader labour market with little friction, whereas older migrant owners face substantial immobility, the result of sunk capital investment, visa-related constraints and limited alternative employment prospects.
+
+3. *Concentrated risk.* Legal and financial liabilities fall almost exclusively on the firm owner. Under frameworks such as the Fair Work Act, statutory penalties for non-compliance apply irrespective of the owner's intent or information state, while employees face negligible direct exposure to regulatory enforcement.
+
+4. *Credibility constraints.* Language barriers and institutional unfamiliarity limit the owner's capacity to negotiate from an informed position. They restrict an owner's ability to contest advice, independently verify regulatory claims or credibly threaten to withhold compensation or terminate a contract, eroding their negotiating position in any wage or contract dispute.
+
+Together, these four asymmetries shift de facto bargaining power toward workers. The remainder of this section formalises this reversal and derives the predictions we test empirically in @sec-res.
+
+To formalise the conditions under which this reversal occurs, consider a small firm operated by a migrant entrepreneur (Owner, $O$) who faces language and institutional barriers, and who employs or contracts a more skilled agent (Agent, $A$) who holds private information about regulatory compliance and administrative requirements.
+
+The firm's output is $y = \theta + a + \varepsilon,$ where $a \geq 0$ denotes the agent's effort, $\theta$ is baseline profitability and $\varepsilon$ is mean-zero noise. Compliance requirements are uncertain. Let 
+
+$$
+c \in \{c_L, c_H\}, \quad \Pr(c = c_H) = p,
+$$
+
+where $c$ denotes the minimum compliance expenditure required to avoid a violation. The realisation of $c$ is privately observed by the agent and unobserved by the owner. The owner chooses compliance spending $s \geq 0$, and a violation occurs whenever spending falls short of the true requirement,
+
+$$
+\pi(s, c) = \begin{cases} 1, & s < c \\ 0, & s \geq c \end{cases}
+$$
+
+A violation triggers a penalty $F > 0$ borne entirely by the owner, reflecting the risk asymmetry described above. The owner's expected payoff is thus
+
+$$
+U_O = \mathbb{E}[y - w - s - \pi(s, c)F]
+$$
+
+and the agent's payoff is
+
+$$
+U_A = \mathbb{E}[w] - \psi(a) + bs,
+$$
+
+where $\psi(a) = \frac{\gamma}{2} a^2$ is the disutility of effort and $b \geq 0$ captures the agent's private benefit from higher compliance spending, whether through convenience, commissions, a lighter workload or simply greater influence over firm decisions.
+
+Compensation follows a standard incentive contract, $w = \alpha + \beta y$, where $\alpha$ is the base wage and $\beta$ is a performance incentive. Hence, the agent's effort choice is
+
+$$
+a^* = \frac{\beta}{\gamma}.
+$$
+
+The owner delegates the compliance decision by committing to a spending rule $s(\hat{c})$ based on the agent's report $\hat{c}$ of the true requirement. The agent's expected wage does not depend on $\hat{c}$, so the agent does not internalise the cost of compliance and therefore has no incentive to report truthfully. Instead, the agent reports whichever value maximises claimed requirements,
+
+$$
+\hat{c} \in \arg\max_{\tilde{c}} s(\tilde{c}).
+$$
+
+**Result 1 (Systematic Overstatement).** If the agent benefits from spending ($b > 0$) and the owner spends more when requirements are high ($s(c_H) > s(c_L)$), the agent always reports $\hat{c} = c_H$, regardless of the true requirement.
+
+Anticipating this misreporting, the owner cannot learn the true requirement from the agent's report and must instead choose a report-invariant policy, comparing two scenarios.
+
+1. *High-spending scenario:* $\Pi_H = \mathbb{E}[y - w] - c_H$, and
+
+2. *Low-spending scenario:* $\Pi_L = \mathbb{E}[y - w] - c_L - pF$
+
+**Result 2 (Over-Compliance).** The owner over-complies, choosing $s = c_H$ even when the true requirement may be $c_L$, if and only if
+
+$$
+c_H - c_L \leq pF.
+$$
+
+This result captures how regulatory risk amplifies the underlying information problem. Stricter enforcement (a higher $F$), greater uncertainty (a higher $p$) or a stronger reliance on delegation all increase the owner's incentive to over-comply as a precaution against the agent's informational advantage. Unable to verify the true compliance requirement, the owner internalises a regulatory risk that should properly be borne by the better-informed agent.
+
+We next consider how surplus is divided between owner and agent once production and compliance decisions are determined. The central mechanism here is the owner's inability to exit the relationship, itself a product of migration constraints, sunk costs and limited outside employability, which asymmetrically shifts bargaining power toward labour.
+
+Let net surplus be
+
+$$
+S = \Pi - C - pF,
+$$
+
+where $\Pi$ is revenue net of effort, $C$ captures compliance and administrative costs and $pF$ is the expected penalty. Payoffs to the owner and agent are then $U_O = S - w$ and $U_A = w - \psi$, respectively.
+
+The agent's outside option reflects their labour-market alternatives, $\bar{u}_A = u_0$, and is relatively strong for a skilled worker with language proficiency and regulatory knowledge. The owner, by contrast, faces an exit loss
+
+$$
+\bar{u}_O = -K, \quad K > 0,
+$$
+
+that captures their immobility. Leaving Australia would forfeit sunk capital in housing and business equipment, visa requirements and accumulated labour-market networks, while re-entering formal employment is made difficult by age, language proficiency and foregone work experience.
+
+Wages are determined through Nash bargaining over the surplus,
+
+$$
+w \in \arg\max_w (U_A - \bar{u}_A)^\eta (U_O - \bar{u}_O)^{1-\eta},
+$$
+
+where $\eta \in (0, 1)$ is the agent's bargaining weight, yielding
+
+$$
+w^* = \eta S + (1 - \eta)(u_0 + \psi) + \eta K.
+$$
+
+**Result 3 (Power Reversal).** The equilibrium wage is increasing in the owner's exit loss $K$. Although the owner remains the formal employer and residual claimant, a greater inability to exit strengthens the agent's bargaining position.
+
+Compliance risk further compresses the owner's payoff. Substituting the surplus equation gives
+
+$$
+w^* = \eta(\Pi - C - pF) + (1 - \eta)(u_0 + \psi) + \eta K.
+$$
+
+An increase in compliance risk $pF$ reduces total surplus, but need not reduce wages proportionally. Wages adjust with the bargaining weight $\eta$, so workers are partly insulated from compliance risk while owners absorb the remainder, an asymmetry that is amplified when the owner's exit loss is high.
+
+**Result 4 (Risk Concentration).** Stricter regulatory enforcement (a higher $F$) or greater compliance uncertainty (a higher $p$) disproportionately harms owners with large exit costs $K$, so that regulation amplifies the bargaining asymmetry precisely for the owners least able to exit.
+
+Taken together, these results explain why reforms meant to improve worker outcomes can end up harming small-business owners who face language and institutional barriers. When enforcement rises without extra language or compliance support, owners with high exit costs absorb the cost through lower profits, not through lower wages or stronger worker protections.
+
+As detailed in @sec-methodology, we test these predictions in three analyses. In @sec-block1, we examine whether employees in small migrant-owned firms earn a wage premium, as Result 3 predicts. In @sec-block2, we turn to owner income and look at whether migrant owners, especially those with limited English proficiency, earn less, or bear more income risk, than employees of the same origin who work in workplaces of the same size. In @sec-block3, we turn to entry into business ownership and ask whether "push" factors, such as labour-market detachment, low earnings and liquidity constraints, drive migrants into entrepreneurship more than migrant origin does.

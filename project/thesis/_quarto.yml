@@ -1,0 +1,48 @@
+project:
+  type: book
+
+book:
+  title: "Do Language Barriers Shift Bargaining Power from Employers to Workers? Evidence from Migrant-Owned Small Businesses"
+  author: "Hong Minh Dang (Addison) Nguyen"
+  # Keep the PDF named thesis.pdf (render.R copies it to project/output)
+  output-file: thesis
+  chapters:
+    - index.qmd
+    - "01_intro.qmd"
+    - "02_data.qmd"
+    - "03_methodology.qmd"
+    - "04_results.qmd"
+    - "05_discussion.qmd"
+    - "06_conclusion.qmd"
+    - "07_appendix.qmd"
+
+bibliography: thesisrefs.bib
+# Styles every ::: {.notes} div as a grey notes box (see notes.lua)
+filters:
+  - notes.lua
+reference-location: section
+csl: apa.csl
+degrees: Bachelor of Commerce
+degreetype: Bachelor of Commerce (Honours)
+submitted: 2026
+affiliation: Department of Econometrics & Business Statistics
+supervisor: "Professor Dan Zhu"
+
+format:
+  monashhonours-typst:
+    # Libertinus Math (paired with the Libertinus Serif body font)
+    font-paths: ["_extensions/quarto-monash/monashhonours/fonts"]
+    toc: false
+    bibliography-location: section
+    crossref:
+      chapters: true
+
+# References to top-level sections read "Section 3", as in a paper, not "Chapter 3"
+language:
+  crossref-ch-prefix: "Section"
+
+number-sections: true
+number-depth: 3
+
+execute:
+  freeze: auto

@@ -1,0 +1,120 @@
+\begin{table}
+\centering
+\begin{tblr}[         %% tabularray outer open
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+width={0.96\linewidth},
+colspec={X[0.3]X[0.11]X[0.11]X[0.11]X[0.11]X[0.11]X[0.11]},
+hline{2}={3-7}{solid, black, 0.03em},
+hline{2}={2}{solid, black, 0.03em, l=-0.5},
+hline{1}={1-7}{solid, black, 0.1em},
+hline{3}={1-7}{solid, black, 0.1em},
+hline{83}={1-7}{solid, black, 0.1em},
+hline{89}={1-7}{solid, black, 0.1em},
+cell{1-2,4-9,11-20,22-33,35-48,50-69,71-88}{3}={}{halign=c},
+cell{1-2,4-9,11-20,22-33,35-48,50-69,71-88}{4}={}{halign=c},
+cell{1-2,4-9,11-20,22-33,35-48,50-69,71-88}{5}={}{halign=c},
+cell{1-2,4-9,11-20,22-33,35-48,50-69,71-88}{6}={}{halign=c},
+cell{1-2,4-9,11-20,22-33,35-48,50-69,71-88}{7}={}{halign=c},
+cell{1-2,5,7,9,12,14,16,18,20,23,25,27,29,31,33,36,38,40,42,44,46,48,51,53,55,57,59,61,63,65,67,69,72,74,76,78,80,82-88}{1}={}{halign=l},
+cell{1}{2}={c=6}{halign=c, wd=0.66\linewidth},
+cell{2,4-9,11-20,22-33,35-48,50-69,71-88}{2}={}{halign=c},
+cell{3,10,21,34,49,70}{1}={c=7}{font=\itshape, halign=l, wd=0.96\linewidth},
+cell{3,10,21,34,49,70}{2}={}{font=\itshape, halign=c},
+cell{3,10,21,34,49,70}{3}={}{font=\itshape, halign=c},
+cell{3,10,21,34,49,70}{4}={}{font=\itshape, halign=c},
+cell{3,10,21,34,49,70}{5}={}{font=\itshape, halign=c},
+cell{3,10,21,34,49,70}{6}={}{font=\itshape, halign=c},
+cell{3,10,21,34,49,70}{7}={}{font=\itshape, halign=c},
+cell{4,6,8,11,13,15,17,19,22,24,26,28,30,32,35,37,39,41,43,45,47,50,52,54,56,58,60,62,64,66,68,71,73,75,77,79,81}{1}={r=2}{halign=l, valign=h},
+}                     %% tabularray inner close
+& Dependent variable: entry into business ownership × 100 (OLS) &  &  &  &  &  \\
+& Origin only & Labour market only & Origin and labour market & Adding human capital & Origin × push & Origin × push, individual FEs \\
+Origin and English proficiency & Origin and English proficiency & Origin and English proficiency & Origin and English proficiency & Origin and English proficiency & Origin and English proficiency & Origin and English proficiency \\
+Migrant with English-speaking origin & 0.247 &  & 0.322∗ & 0.124 & -0.128 &  \\
+& (0.187) &  & (0.187) & (0.188) & (0.195) &  \\
+Migrant from other origin with high English proficiency & 0.207 &  & 0.236 & -0.025 & -0.231 &  \\
+& (0.175) &  & (0.174) & (0.179) & (0.185) &  \\
+Migrant from other origin with low English proficiency & -0.107 &  & -0.317 & -0.410 & -0.689∗∗∗ &  \\
+& (0.249) &  & (0.252) & (0.253) & (0.237) &  \\
+Labour-market position at t−1 & Labour-market position at t−1 & Labour-market position at t−1 & Labour-market position at t−1 & Labour-market position at t−1 & Labour-market position at t−1 & Labour-market position at t−1 \\
+Unemployed &  & 1.651∗∗∗ & 1.651∗∗∗ & 1.548∗∗∗ & 1.311∗∗∗ & 0.874∗∗∗ \\
+&  & (0.181) & (0.181) & (0.184) & (0.191) & (0.223) \\
+Not in labour force &  & 0.929∗∗∗ & 0.936∗∗∗ & 0.784∗∗∗ & 0.782∗∗∗ & 0.577∗∗∗ \\
+&  & (0.111) & (0.111) & (0.122) & (0.122) & (0.166) \\
+Bottom wage quintile &  & 0.727∗∗∗ & 0.733∗∗∗ & 0.797∗∗∗ & 0.620∗∗∗ & 0.672∗∗∗ \\
+&  & (0.112) & (0.112) & (0.113) & (0.117) & (0.127) \\
+Liquidity constrained &  & 0.351∗∗∗ & 0.356∗∗∗ & 0.338∗∗∗ & 0.338∗∗∗ & 0.120 \\
+&  & (0.081) & (0.081) & (0.081) & (0.080) & (0.088) \\
+Liquidity measure missing &  & 0.687∗∗∗ & 0.708∗∗∗ & 0.727∗∗∗ & 0.726∗∗∗ & 0.366∗∗∗ \\
+&  & (0.106) & (0.107) & (0.107) & (0.107) & (0.113) \\
+Origin × labour-market position at t−1 & Origin × labour-market position at t−1 & Origin × labour-market position at t−1 & Origin × labour-market position at t−1 & Origin × labour-market position at t−1 & Origin × labour-market position at t−1 & Origin × labour-market position at t−1 \\
+MES × Unemployed &  &  &  &  & 0.996 & 1.279 \\
+&  &  &  &  & (0.763) & (0.841) \\
+MNES high English × Unemployed &  &  &  &  & 1.338∗∗ & -0.160 \\
+&  &  &  &  & (0.651) & (0.674) \\
+MNES low English × Unemployed &  &  &  &  & 3.339 & -1.161 \\
+&  &  &  &  & (2.200) & (2.194) \\
+MES × Bottom wage quintile &  &  &  &  & 1.739∗∗∗ & 1.426∗∗ \\
+&  &  &  &  & (0.554) & (0.584) \\
+MNES high English × Bottom wage quintile &  &  &  &  & 0.737∗ & -0.262 \\
+&  &  &  &  & (0.399) & (0.444) \\
+MNES low English × Bottom wage quintile &  &  &  &  & 1.487 & 3.112∗ \\
+&  &  &  &  & (1.338) & (1.847) \\
+Human capital and job attributes at t−1 & Human capital and job attributes at t−1 & Human capital and job attributes at t−1 & Human capital and job attributes at t−1 & Human capital and job attributes at t−1 & Human capital and job attributes at t−1 & Human capital and job attributes at t−1 \\
+Postgraduate &  &  &  & 1.400∗∗∗ & 1.402∗∗∗ & 1.433∗∗∗ \\
+&  &  &  & (0.210) & (0.210) & (0.492) \\
+Graduate diploma or certificate &  &  &  & 0.929∗∗∗ & 0.929∗∗∗ & 0.756 \\
+&  &  &  & (0.177) & (0.177) & (0.483) \\
+Bachelor or honours &  &  &  & 0.799∗∗∗ & 0.794∗∗∗ & 0.667∗∗ \\
+&  &  &  & (0.122) & (0.122) & (0.290) \\
+Advanced diploma or diploma &  &  &  & 0.895∗∗∗ & 0.890∗∗∗ & 1.260∗∗∗ \\
+&  &  &  & (0.137) & (0.137) & (0.360) \\
+Certificate III or IV &  &  &  & 0.697∗∗∗ & 0.692∗∗∗ & 0.929∗∗∗ \\
+&  &  &  & (0.099) & (0.099) & (0.238) \\
+Year 12 &  &  &  & 0.303∗∗∗ & 0.296∗∗∗ & 0.637∗∗∗ \\
+&  &  &  & (0.097) & (0.097) & (0.170) \\
+Tenure with current employer (years) &  &  &  & -0.032∗∗∗ & -0.032∗∗∗ & 0.014∗ \\
+&  &  &  & (0.006) & (0.006) & (0.008) \\
+Demographics & Demographics & Demographics & Demographics & Demographics & Demographics & Demographics \\
+Age & 0.133∗∗∗ & 0.151∗∗∗ & 0.151∗∗∗ & 0.149∗∗∗ & 0.146∗∗∗ & -7.627 \\
+& (0.009) & (0.010) & (0.010) & (0.010) & (0.010) & (43917.949) \\
+Age squared & -0.002∗∗∗ & -0.002∗∗∗ & -0.002∗∗∗ & -0.002∗∗∗ & -0.002∗∗∗ & -0.004∗∗∗ \\
+& (0.000) & (0.000) & (0.000) & (0.000) & (0.000) & (0.000) \\
+Female & -0.521∗∗∗ & -0.582∗∗∗ & -0.579∗∗∗ & -0.525∗∗∗ & -0.526∗∗∗ & 1.135 \\
+& (0.073) & (0.072) & (0.072) & (0.073) & (0.073) & (26711.081) \\
+Years since arrival in Australia & -0.001 & 0.003 & -0.003 & 0.001 & 0.004 & 0.013 \\
+& (0.004) & (0.002) & (0.004) & (0.004) & (0.004) & (0.016) \\
+Years since arrival missing & -0.987 & -1.047 & -1.215 & -0.960 & -0.975 & 0.531 \\
+& (0.874) & (0.937) & (0.919) & (0.831) & (0.805) & (0.432) \\
+De facto & -0.038 & -0.047 & -0.046 & -0.076 & -0.076 & -0.542∗∗∗ \\
+& (0.113) & (0.112) & (0.113) & (0.112) & (0.112) & (0.187) \\
+Separated & -0.377∗∗ & -0.477∗∗∗ & -0.477∗∗∗ & -0.446∗∗ & -0.444∗∗ & -0.633∗∗ \\
+& (0.181) & (0.181) & (0.181) & (0.181) & (0.181) & (0.260) \\
+Divorced & -0.420∗∗∗ & -0.494∗∗∗ & -0.491∗∗∗ & -0.479∗∗∗ & -0.478∗∗∗ & -0.879∗∗∗ \\
+& (0.131) & (0.131) & (0.131) & (0.131) & (0.131) & (0.274) \\
+Widowed & -0.046 & 0.012 & 0.013 & 0.058 & 0.053 & 0.103 \\
+& (0.101) & (0.103) & (0.103) & (0.103) & (0.103) & (0.212) \\
+Never married and not de facto & -1.014∗∗∗ & -1.153∗∗∗ & -1.147∗∗∗ & -1.065∗∗∗ & -1.058∗∗∗ & -1.250∗∗∗ \\
+& (0.106) & (0.106) & (0.106) & (0.106) & (0.106) & (0.220) \\
+Household and location at t−1 & Household and location at t−1 & Household and location at t−1 & Household and location at t−1 & Household and location at t−1 & Household and location at t−1 & Household and location at t−1 \\
+Homeowner & -0.147∗∗ & -0.033 & -0.023 & -0.002 & 0.001 & 0.003 \\
+& (0.069) & (0.070) & (0.070) & (0.070) & (0.070) & (0.111) \\
+SEIFA disadvantage decile & 0.170∗∗∗ & 0.187∗∗∗ & 0.186∗∗∗ & 0.164∗∗∗ & 0.165∗∗∗ & 0.073∗∗∗ \\
+& (0.013) & (0.013) & (0.013) & (0.013) & (0.013) & (0.024) \\
+Inner regional Australia & 0.594∗∗∗ & 0.553∗∗∗ & 0.556∗∗∗ & 0.564∗∗∗ & 0.567∗∗∗ & 0.329∗ \\
+& (0.092) & (0.091) & (0.092) & (0.091) & (0.091) & (0.189) \\
+Outer regional Australia & 0.528∗∗∗ & 0.487∗∗∗ & 0.490∗∗∗ & 0.514∗∗∗ & 0.518∗∗∗ & 0.457∗ \\
+& (0.122) & (0.121) & (0.121) & (0.121) & (0.121) & (0.274) \\
+Remote Australia & 0.759∗∗ & 0.718∗∗ & 0.723∗∗ & 0.749∗∗ & 0.754∗∗ & 0.753 \\
+& (0.328) & (0.327) & (0.327) & (0.326) & (0.326) & (0.511) \\
+Very remote Australia & 2.695∗∗∗ & 2.629∗∗∗ & 2.641∗∗∗ & 2.651∗∗∗ & 2.652∗∗∗ & 2.750∗∗ \\
+& (0.806) & (0.808) & (0.808) & (0.811) & (0.811) & (1.177) \\
+Observations (person-pairs) & 289,616 & 289,616 & 289,616 & 289,616 & 289,616 & 286,174 \\
+Individuals & 28,626 & 28,626 & 28,626 & 28,626 & 28,626 & 25,184 \\
+Mean entry rate (%) & 2.03 & 2.03 & 2.03 & 2.03 & 2.03 & 1.93 \\
+Year, industry-year and state-year FEs & Yes & Yes & Yes & Yes & Yes & Yes \\
+Individual FEs & No & No & No & No & No & Yes \\
+Joint test of interactions (p-value) &  &  &  &  & 0.002 & 0.091 \\
+\end{tblr}
+\end{table}

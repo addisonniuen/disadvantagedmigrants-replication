@@ -1,0 +1,46 @@
+\begin{table}
+\centering
+\begin{tblr}[         %% tabularray outer open
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+width={1\linewidth},
+colspec={X[0.1]X[0.09]X[0.09]X[0.09]X[0.1]X[0.1]X[0.1]X[0.16]X[0.17]},
+hline{2}={1-9}{solid, black, 0.05em},
+hline{1}={1-9}{solid, black, 0.08em},
+hline{13}={1-9}{solid, black, 0.08em},
+hline{1}={1-9}{solid, black, 0.1em},
+hline{2}={1-9}{solid, black, 0.1em},
+hline{3}={1-9}{solid, black, 0.1em},
+hline{8}={1-9}{solid, black, 0.1em},
+row{1}={}{halign=c},
+cell{2,4-7,9-12}{2}={}{halign=r},
+cell{2,4-7,9-12}{3}={}{halign=r},
+cell{2,4-7,9-12}{4}={}{halign=r},
+cell{2,4-7,9-12}{5}={}{halign=r},
+cell{2,4-7,9-12}{6}={}{halign=r},
+cell{2,4-7,9-12}{7}={}{halign=r},
+cell{2,4-7,9-12}{8}={}{halign=r},
+cell{2,4-7,9-12}{9}={}{halign=r},
+cell{3,8}{2}={}{font=\bfseries, halign=r},
+cell{3,8}{3}={}{font=\bfseries, halign=r},
+cell{3,8}{4}={}{font=\bfseries, halign=r},
+cell{3,8}{5}={}{font=\bfseries, halign=r},
+cell{3,8}{6}={}{font=\bfseries, halign=r},
+cell{3,8}{7}={}{font=\bfseries, halign=r},
+cell{3,8}{8}={}{font=\bfseries, halign=r},
+cell{3,8}{9}={}{font=\bfseries, halign=r},
+}                     %% tabularray inner close
+Type & $lambda$ & Half-life & $lambda_"MES"$ & $lambda_"MNES"$ & Half-life (MES) & Half-life (MNES) & MSE & Difference (in $10^5$ scale) \\
+Type 0 & 0.00 & -- &  &  &  &  & 0.15244606 & +0.00 \\
+Type 1 & 0.02 & 34.7 &  &  &  &  & 0.15243183 & -1.42 \\
+& 0.03 & 23.1 &  &  &  &  & 0.15243205 & -1.40 \\
+& 0.04 & 17.3 &  &  &  &  & 0.15243557 & -1.05 \\
+& 0.01 & 69.3 &  &  &  &  & 0.15243610 & -1.00 \\
+& 0.05 & 13.9 &  &  &  &  & 0.15244133 & -0.47 \\
+Type 2 &  &  & 0.04 & 0.00 & 17.3 & ∞ & 0.15242431 & -2.17 \\
+&  &  & 0.04 & 0.01 & 17.3 & 69.3 & 0.15242439 & -2.17 \\
+&  &  & 0.05 & 0.00 & 13.9 & ∞ & 0.15242443 & -2.16 \\
+&  &  & 0.05 & 0.01 & 13.9 & 69.3 & 0.15242473 & -2.13 \\
+&  &  & 0.06 & 0.00 & 11.6 & ∞ & 0.15242585 & -2.02 \\
+\end{tblr}
+\end{table}

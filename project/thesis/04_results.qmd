@@ -1,0 +1,639 @@
+# Results {#sec-res}
+
+```{r}
+#| label: setup
+#| include: false
+library(tinytable)
+library(dplyr)
+# tinytable is the only backend that renders natively to BOTH pdf and docx.
+options(modelsummary_factory_default = "tinytable")
+options(modelsummary_format_numeric_latex = "plain")
+RENDER_MODE <- TRUE
+
+# Replication package root (no machine-specific paths)
+parent_dir <- rprojroot::find_root(rprojroot::has_file("project/code/01_setup.R"))
+
+# withr::with_dir(parent_dir, {
+#   source(file.path(parent_dir, "project", "code", "runall.R"))
+# })
+
+withr::with_dir(parent_dir, {
+  source(file.path(parent_dir, "project", "code", "01_setup.R"))
+  withr::with_dir(parent_dir, {
+    source(file.path(parent_dir, "project", "code", "02_datacleaning.R"))
+  })
+  withr::with_dir(parent_dir, {
+    source(file.path(parent_dir, "project", "code", "03_featureengineering.R"))
+  })
+  withr::with_dir(parent_dir, {
+    source(file.path(parent_dir, "project", "code", "05_analysisblock1.R"))
+  })
+  withr::with_dir(parent_dir, {
+    source(file.path(parent_dir, "project", "code", "06_analysisblock2.R"))
+  })
+  withr::with_dir(parent_dir, {
+    source(file.path(parent_dir, "project", "code", "07_analysisblock3.R"))
+  })
+})
+```
+
+```{r}
+#| label: setup-figures
+#| include: false
+
+# Figure style, number formatting and table helpers (thesis_format.R)
+source("thesis_format.R", encoding = "UTF-8")
+
+# Owners in each Block 2 cell (restricted sample), cited in the text
+n_owners_cell <- cells_b2 |>
+  dplyr::mutate(cell = paste(owner_type, origin_group, sep = ":")) |>
+  dplyr::select(cell, individuals) |>
+  tibble::deframe()
+```
+
+```{r}
+#| label: res-text-values
+#| include: false
+# Values quoted in the text that are not computed elsewhere in this chapter
+
+# Employee wages: sample size and the longitudinal-weight sensitivity check
+b1_n_obs <- fmt_int(nobs(regression1_v1a))
+b1_n_ind <- fmt_int(dplyr::n_distinct(data_regression_1$xwaveid[fixest::obs(regression1_v1a)]))
+b1_lnw_term <- "small_single_site:loo_mnes_loweng_1d_type0_lnw"
+b1_lnw_le <- fmt_num(coef(regression1_lnw$type0)[[b1_lnw_term]], 3)
+b1_lnw_le_p <- fmt_p_eq(fixest::pvalue(regression1_lnw$type0)[[b1_lnw_term]])
+b1_lnw_le_owners <- panel_final |>
+  dplyr::filter(
+    dplyr::coalesce(is_owner == 1L, FALSE),
+    origin_group == "mnes_loweng",
+    as.integer(as.character(wave)) <= 21
+  ) |>
+  dplyr::summarise(
+    all = dplyr::n_distinct(xwaveid),
+    weighted = dplyr::n_distinct(xwaveid[dplyr::coalesce(responding_person_longitudinal_weight_lnwtrp, 0) > 0])
+  )
+
+# Entry: unconditional rates by origin (as in Table D.1)
+b3_rates <- data_regression_3 |>
+  dplyr::summarise(n = dplyr::n(), entries = sum(entry_owner == 1), .by = origin_group) |>
+  dplyr::mutate(rate = sprintf("%.2f", 100 * entries / n))
+b3_rate <- \(g) b3_rates$rate[b3_rates$origin_group == g]
+b3_n_le <- fmt_int(b3_rates$n[b3_rates$origin_group == "mnes_loweng"])
+b3_e_le <- fmt_int(b3_rates$entries[b3_rates$origin_group == "mnes_loweng"])
+
+# Entry: coefficients, odds ratios and p-values
+b3_coef <- \(m, term) coef(m)[[term]]
+b3_b <- \(m, term) fmt_num(b3_coef(m, term), 3)
+b3_or <- \(m, term) fmt_num(exp(b3_coef(m, term)), 2)
+b3_p <- \(m, term) fmt_p_eq(fixest::pvalue(m)[[term]])
+# Odds ratio of the push for group g, exp(main effect + interaction)
+b3_push_or <- function(m, push, g) {
+  terms <- if (g == "native") push else c(push, paste0("origin_group", g, ":", push))
+  fmt_num(exp(sum(coef(m)[terms])), 2)
+}
+b3_inter <- \(g, push) paste0("origin_group", g, ":", push)
+b3_n_ue_le <- sum(data_regression_3$entry_owner[
+  data_regression_3$unemployed_l1 == 1 & data_regression_3$origin_group == "mnes_loweng"
+])
+```
+
+
+## Employee Wages {#sec-results-block1}
+
+```{r}
+#| include: false
+
+# Values from the employee wage regressions quoted in the text below
+b1_models <- list(type0 = regression1_v1a, type1 = regression1_v1b, type2 = regression1_v1c)
+# Share of employees (percent) with no low-English owner in their industry-year
+b1_zero_le <- 100 * mean(data_regression_1$loo_mnes_loweng_1d_type0[fixest::obs(regression1_v1a)] == 0)
+# Distinct low-English owners observed in waves 1 to 21
+b1_n_le_owners <- panel_final |>
+  dplyr::filter(
+    dplyr::coalesce(is_owner == 1L, FALSE),
+    origin_group == "mnes_loweng",
+    as.integer(as.character(wave)) <= 21
+  ) |>
+  dplyr::pull(xwaveid) |>
+  dplyr::n_distinct()
+# Joint F-test of the three interactions
+b1_joint_p <- fmt_p_eq(cluster_f_test(regression1_v1a, paste(b1_interactions("type0"), "= 0"))[2, "Pr(>F)"])
+b1_term <- \(share, type = "type0", res = "1d") paste0("small_single_site:loo_", share, "_", res, "_", type)
+b1_b <- \(m, term, d = 3) fmt_num(coef(m)[[term]], d)
+b1_se <- \(m, term) fmt_num(fixest::se(m)[[term]], 3)
+b1_p <- \(m, term) fmt_p_eq(fixest::pvalue(m)[[term]])
+# Percentage wage difference implied by a log-point coefficient, without sign
+b1_pct <- \(x) fmt_num(abs(100 * (exp(x) - 1)), 1)
+b1_q95 <- \(share) quantile(data_regression_1[[paste0("loo_", share, "_1d_type0")]], 0.95, na.rm = TRUE)
+b1_sd <- \(share) sd(data_regression_1[[paste0("loo_", share, "_1d_type0")]][fixest::obs(regression1_v1a)])
+# Predicted gap of workplace type `site` at owner share s of one group (Type 0)
+b1_at <- \(m, site, share, s) coef(m)[[site]] + s * coef(m)[[paste0(site, ":loo_", share, "_1d_type0")]]
+b1_beta1 <- purrr::map_dbl(b1_models, \(m) coef(m)[["small_single_site"]])
+b1_beta2 <- purrr::map_dbl(b1_models, \(m) coef(m)[["small_site_chain"]])
+b1_beta3 <- purrr::map_dbl(b1_models, \(m) coef(m)[["chain_like"]])
+# Joint p-value of one workplace type's owner-share interactions in the model with chain-workplace interactions (Type 0)
+b1_pl_joint <- \(site) fmt_p_eq(fixest::wald(regression1_placebo$type0, keep = paste0("^", site, ":loo_"), print = FALSE)$p)
+```
+
+### Main Results {#sec-block1-baseline}
+
+```{r}
+#| label: tbl-b1-main
+#| tbl-cap: "Main regression results for employee wages."
+#| echo: false
+
+# F-tests of the three owner-share interactions, one per weighting
+b1_main_types <- c(type0 = "No decay (Type 0, main)", type1 = "Pooled decay (Type 1)", type2 = "Origin-specific decay (Type 2)")
+b1_main_models <- list(type0 = regression1_v1a, type1 = regression1_v1b, type2 = regression1_v1c)
+b1_main_f <- purrr::imap(b1_main_models, \(m, type) cluster_f_test(
+  m, paste0("small_single_site:", c("loo_mes_1d_", "loo_mnes_higheng_1d_", "loo_mnes_loweng_1d_"), type, " = 0")
+))
+
+# The main specification uses the plain owner shares (no decay, first column).
+# The decay weightings are shown for comparison only.
+b1_models <- setNames(b1_main_models, b1_main_types)
+
+coef_b1_main <- c(
+  # Firm structure
+  "small_single_site" = "Small single-site",
+  "chain_like" = "Chain-like",
+  "small_site_chain" = "Small-site chain"
+)
+b1_main_groups <- c(mes = "MES", mnes_higheng = "MNES high-English", mnes_loweng = "MNES low-English")
+for (g in names(b1_main_groups)) {
+  for (type in names(b1_main_types)) {
+    coef_b1_main[paste0("small_single_site:loo_", g, "_1d_", type)] <-
+      paste("Small single-site x", b1_main_groups[[g]], "owner density")
+  }
+}
+
+b1_main_rows <- dplyr::bind_rows(
+  c(term = "Individuals", setNames(purrr::map_chr(b1_main_models, \(m) fmt_int(n_individuals_model(m))), b1_main_types)),
+  c(term = "Controls", setNames(rep("Yes", 3), b1_main_types)),
+  c(term = "Year FEs", setNames(rep("Yes", 3), b1_main_types)),
+  c(term = "Industry-year FEs", setNames(rep("Yes", 3), b1_main_types)),
+  c(term = "State-year FEs", setNames(rep("Yes", 3), b1_main_types)),
+  c(term = "F-Statistic (df)", setNames(purrr::map_chr(b1_main_f, \(f) sprintf("%.3f (%d, %d)", f[2, "F"], f[2, "Df"], f[2, "Res.Df"])), b1_main_types)),
+  c(term = "F-test p-value", setNames(purrr::map_chr(b1_main_f, \(f) fmt_p(f[2, "Pr(>F)"])), b1_main_types))
+)
+
+modelsummary::modelsummary(
+  b1_models,
+  coef_map = coef_b1_main,
+  gof_map = gof_comma(tribble(
+    ~raw            , ~clean                        , ~fmt ,
+    "nobs"          , "Observations (person-years)" ,    0 ,
+    "r.squared"     , "R-Squared"                   ,    3 ,
+    "adj.r.squared" , "Adjusted R-Squared"          ,    3
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = b1_main_rows,
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    i = list(
+      "Firm structure" = 1,
+      "Interactions of firm structure with owner density" = 7
+    ),
+    j = list("Dependent variable: log hourly wage in main job" = 2:4)
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, bold = FALSE, line = "b") |>
+  tinytable::style_tt(i = c(1, 8), italic = TRUE) |>
+  # The main specification (first column) in bold
+  tinytable::style_tt(i = 0, j = 2, bold = TRUE) |>
+  # Rule under the coefficients (2 group headers + 6 coefficients x 2 rows =
+  # 14 rows) and at the bottom of the table
+  tinytable::style_tt(i = c(14, 24), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:4, align = "c") |>
+  pair_se_rows(c(1, 7))
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of @eq-employee-wage for employees in HILDA waves 1 to 21. The dependent variable is the log hourly wage in the employee's main job. Each column represents a different weighting of the leave-one-out owner shares of @eq-loo-shares, namely no decay (Type 0, $\lambda = 0$), which is our main specification, pooled decay (Type 1, $\lambda = `r lambda_mean`$) and origin-specific decay (Type 2, $\lambda_{\text{MES}} = `r lambda_mes`$ and $\lambda_{\text{MNES}} = `r lambda_other`$). Workplace types are compared with other workplaces of 20 or more people, and the owner shares run from 0 to 1. All columns include covariates for age, sex, origin group, casual or permanent employment, occupation, education, SEIFA decile, occupational tenure, employer tenure and union membership, and year, industry-year and state-year fixed effects. The F-statistic, with its degrees of freedom in parentheses, tests the null hypothesis that the three owner-share interactions are jointly zero, using the clustered covariance matrix; its p-value is reported in the row below. All standard errors reported in parentheses are clustered at the individual and industry-year levels. Full results are reported in @tbl-b1-appendix. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+@tbl-b1-main reports OLS estimates of @eq-employee-wage on `r b1_n_obs` person-years from `r b1_n_ind` employees. The first column is our main specification, which uses the owner shares without decay (Type 0). The second and third columns apply the pooled and origin-specific decay weightings of @sec-assimilation and are reported for comparison.
+
+Employees of small single-site workplaces earn `r b1_pct(b1_beta1[["type0"]])` per cent less than employees of other large workplaces in the same industry and year ($\beta_1 = `r fmt_num(b1_beta1[["type0"]], 3)`$),[^demo] while employees of chain-like workplaces earn about `r fmt_num(100 * (exp(b1_beta3[["type0"]]) - 1), 0)` per cent more ($\beta_3 = `r fmt_num(b1_beta3[["type0"]], 3)`$). Small sites of multi-site employers fall in between ($\beta_2 = `r fmt_num(b1_beta2[["type0"]], 3)`$).
+
+[^demo]: The percentage difference is $100 \times (e^{\beta} - 1)$. For example, $\beta = `r fmt_num(b1_beta1[['type0']], 3)`$ corresponds to a `r b1_pct(b1_beta1[['type0']])` per cent lower wage relative to the reference category.
+
+The small single-site wage gap narrows where owners from non-English-speaking countries with high English proficiency are more common, but not where owners with limited English are common. The interaction with the high-English MNES share is $\beta_5 = `r b1_b(regression1_v1a, b1_term("mnes_higheng"))`$ ($p `r b1_p(regression1_v1a, b1_term("mnes_higheng"))`$), so a one-standard-deviation increase in that share (`r fmt_num(b1_sd("mnes_higheng"), 3)`) narrows the gap by `r fmt_num(100 * b1_sd("mnes_higheng") * coef(regression1_v1a)[[b1_term("mnes_higheng")]], 1)` percentage points. The interaction with the low-English MNES share is $\beta_6 = `r b1_b(regression1_v1a, b1_term("mnes_loweng"))`$ ($p `r b1_p(regression1_v1a, b1_term("mnes_loweng"))`$), negative and far from significant. The three interactions are jointly significant ($p `r b1_joint_p`$).
+
+To gauge the size of these interactions, we compute the predicted small single-site wage gap at different owner shares. Where there are no non-English-speaking migrant owners, employees of small single-site workplaces earn `r b1_pct(b1_beta1[["type0"]])` per cent less than employees of large workplaces in the same industry and year. At the 95th percentile of the high-English owner share (`r fmt_num(100 * b1_q95("mnes_higheng"), 1)` per cent of owners), the penalty narrows to `r b1_pct(b1_at(regression1_v1a, "small_single_site", "mnes_higheng", b1_q95("mnes_higheng")))` per cent. At the 95th percentile of the low-English owner share (`r fmt_num(100 * b1_q95("mnes_loweng"), 1)` per cent of owners), it is `r b1_pct(b1_at(regression1_v1a, "small_single_site", "mnes_loweng", b1_q95("mnes_loweng")))` per cent, close to the penalty where there are no such owners. Working in a small independent business therefore costs employees less in industries where more such businesses are run by non-English-speaking migrants who speak English well, but not where more are run by owners with limited English. These gaps compare employees of different workplace types within the same industry and year. They are not gaps between owners and employees, nor between migrant and native-born employees.
+
+The MES share does not behave like the native-born benchmark we expected. Its interaction is $\beta_4 = `r b1_b(regression1_v1a, b1_term("mes"))`$ ($p `r b1_p(regression1_v1a, b1_term("mes"))`$), so a higher share of MES owners is associated with a *wider* small single-site gap. In terms of the explanations set out in @sec-block1, the positive high-English interaction is consistent with better job matching or with power reversal, but the absence of any narrowing where owners have limited English does not show the concentration of the effect among low-English owners that power reversal predicts.
+
+### Robustness and Sensitivity Checks {#sec-block1-robust}
+
+The wage estimates rest on several measurement choices and, for some origin groups, on very few owners. We assess how sensitive they are to each choice in turn; the corresponding tables are in Appendix [-@sec-appendix-b1].
+
+*Construction of migrant owner density.* HILDA observes few MNES owners. Only `r b1_n_le_owners` low-English owners appear in waves 1 to 21, and the low-English share is zero for `r fmt_num(b1_zero_le, 1)` per cent of employees, so the share in any industry-year rests on a handful of owners and depends on how each of them is weighted. We therefore vary the weighting in two ways. The decay weightings in the second and third columns of @tbl-b1-main down-weight long-settled migrant owners, and @tbl-b1-lnw builds the shares with the longitudinal instead of the cross-sectional survey weight. The high-English interaction remains positive and significant under every decay weighting. The low-English interaction is far less stable. Under the longitudinal weight, which is positive for only `r b1_lnw_le_owners$weighted` of the `r b1_lnw_le_owners$all` low-English owners, it becomes positive ($`r b1_lnw_le`$, $p `r b1_lnw_le_p`$). The choice of weighting therefore matters for the low-English estimate, which we treat as uninformative. Sampling error in a share that rests on few owners also acts like measurement error in a regressor and biases its interaction towards zero, which reinforces this conclusion.
+
+*Workplace size threshold.* The 20-person cut-off follows the ABS definition of a small business, but the businesses that migrants own may be smaller or larger than this. We redefine small workplaces at 10 and 50 people (@tbl-b1-robustness). The high-English interaction is $`r b1_b(regression1_v1a_check_wpsize10, "small_single_site_10:loo_mnes_higheng_1d_type0")`$ ($p `r b1_p(regression1_v1a_check_wpsize10, "small_single_site_10:loo_mnes_higheng_1d_type0")`$) and $`r b1_b(regression1_v1a_check_wpsize50, "small_single_site_50:loo_mnes_higheng_1d_type0")`$ ($p `r b1_p(regression1_v1a_check_wpsize50, "small_single_site_50:loo_mnes_higheng_1d_type0")`$) under the two thresholds, and the low-English interaction remains negative and insignificant ($`r b1_b(regression1_v1a_check_wpsize10, "small_single_site_10:loo_mnes_loweng_1d_type0")`$ and $`r b1_b(regression1_v1a_check_wpsize50, "small_single_site_50:loo_mnes_loweng_1d_type0")`$). The results do not depend on the size threshold.
+
+*Industry classification.* The 19 ANZSIC divisions are broad, and migrant owners may concentrate in narrower industries within them. We therefore construct the owner shares and the industry-by-year fixed effects at the two-digit level (@tbl-b1-robustness-2digit). The pattern weakens. The high-English interaction falls to $`r b1_b(regression1_v3a, b1_term("mnes_higheng", "type0", "2d"))`$ ($p `r b1_p(regression1_v3a, b1_term("mnes_higheng", "type0", "2d"))`$) and the low-English interaction is $`r b1_b(regression1_v3a, b1_term("mnes_loweng", "type0", "2d"))`$ ($p `r b1_p(regression1_v3a, b1_term("mnes_loweng", "type0", "2d"))`$), although the three interactions remain jointly significant. Two-digit shares rest on even fewer owners per cell, so the weaker estimates are consistent with greater attenuation as well as with a weaker underlying relationship.
+
+*Migrant ownership versus English proficiency.* The three origin-specific shares are correlated, which makes it hard to separate migrant ownership from owners' English. We therefore replace them with the share of all migrant owners and the share of low-English owners (@tbl-b1v2-appendix), so that the low-English coefficient measures any effect of limited English over and above migrant ownership. The migrant share has a coefficient of $`r b1_b(regression1_v2a, "small_single_site:loo_migrant_share_1d")`$ ($p `r b1_p(regression1_v2a, "small_single_site:loo_migrant_share_1d")`$), while the low-English share has a coefficient of $`r b1_b(regression1_v2a, "small_single_site:loo_loweng_share_1d")`$ ($p `r b1_p(regression1_v2a, "small_single_site:loo_loweng_share_1d")`$). The narrowing is therefore associated with migrant ownership in general, not with owners' limited English.
+
+*Chain workplaces.* If the interactions reflect migrant ownership, they should appear mainly for workplaces that migrants are likely to own. Small sites of multi-site employers share the local scale of small independent workplaces but belong to larger, mostly native-run employers, so they allow us to check whether the main interactions instead reflect the pay structure of industries with many migrant owners. We add interactions of each owner share with small-site chains and with chain-like workplaces (@tbl-b1-placebo). The small-site chain interactions are jointly significant ($p `r b1_pl_joint("small_site_chain")`$), mainly because small sites of chains also pay relatively more where high-English MNES owners are common ($`r b1_b(regression1_placebo$type0, "small_site_chain:loo_mnes_higheng_1d_type0")`$, $p `r b1_p(regression1_placebo$type0, "small_site_chain:loo_mnes_higheng_1d_type0")`$), and the chain-like interactions are also jointly significant ($p `r b1_pl_joint("chain_like")`$). Once these terms are included, the small single-site interactions with the high-English and low-English shares are $`r b1_b(regression1_placebo$type0, b1_term("mnes_higheng"))`$ ($p `r b1_p(regression1_placebo$type0, b1_term("mnes_higheng"))`$) and $`r b1_b(regression1_placebo$type0, b1_term("mnes_loweng"))`$ ($p `r b1_p(regression1_placebo$type0, b1_term("mnes_loweng"))`$). The high-English interaction for small independent workplaces is about twice that for small sites of chains, so the narrowing is strongest where migrants are most likely to be owners, but it is not confined to those workplaces.
+
+@fig-b1-placebo shows what this extended model implies for every workplace type. Where no non-English-speaking migrants own businesses, employees of small single-site workplaces earn `r b1_pct(coef(regression1_placebo$type0)[["small_single_site"]])` per cent less than employees of other large workplaces, employees of small sites of chains `r b1_pct(coef(regression1_placebo$type0)[["small_site_chain"]])` per cent less and employees of chain-like workplaces `r b1_pct(coef(regression1_placebo$type0)[["chain_like"]])` per cent more. As the share of high-English MNES owners rises to its 95th percentile, these differences become `r paste(sprintf("%+.1f", purrr::map_dbl(names(workplace_labels), \(w) 100 * (exp(b1_at(regression1_placebo$type0, w, "mnes_higheng", b1_q95("mnes_higheng"))) - 1))), collapse = ", ")` per cent. The wage distribution across workplace types therefore compresses in industries with many high-English MNES owners. The compression is largest for small independent workplaces, but part of the main pattern reflects the pay structure of these industries and not ownership alone.
+
+```{r}
+#| label: fig-b1-placebo
+#| fig-cap: "Wage gaps of each workplace type relative to other large workplaces in the same industry and year, as the share of non-English-speaking migrant owners rises."
+#| fig-width: 7
+#| fig-height: 3.8
+#| echo: false
+
+# Predicted gap of each workplace type w relative to the reference category
+# (other large workplaces), beta_w + beta_wg * S, from the model with chain-workplace interactions with
+# plain owner shares (Type 0, no assimilation weighting), as the owner share S
+# of group g rises (other shares at zero).
+b1_type_curve <- function(m, site, share, group) {
+  b <- coef(m)
+  V <- vcov(m)
+  inter <- paste0(site, ":", share)
+  smax <- quantile(data_regression_1[[share]], 0.95, na.rm = TRUE)
+  tibble::tibble(s = seq(0, smax, length.out = 50)) |>
+    dplyr::mutate(
+      est = b[[site]] + b[[inter]] * s,
+      se = sqrt(V[site, site] + s^2 * V[inter, inter] + 2 * s * V[site, inter]),
+      site = workplace_labels[[site]],
+      group = group
+    )
+}
+
+tidyr::expand_grid(
+  site = names(workplace_labels),
+  share = c("loo_mnes_higheng_1d_type0", "loo_mnes_loweng_1d_type0")
+) |>
+  purrr::pmap_dfr(\(site, share) b1_type_curve(
+    regression1_placebo$type0, site, share,
+    if (grepl("higheng", share)) group_labels[["mnes_higheng"]] else group_labels[["mnes_loweng"]]
+  )) |>
+  dplyr::mutate(
+    lo = est - 1.96 * se,
+    hi = est + 1.96 * se,
+    dplyr::across(c(est, lo, hi), \(x) 100 * (exp(x) - 1)),
+    site = factor(site, levels = workplace_labels),
+    panel = paste("Share of", group, "owners")
+  ) |>
+  ggplot2::ggplot(ggplot2::aes(x = 100 * s, y = est, colour = site, fill = site, linetype = site)) +
+  ggplot2::geom_hline(yintercept = 0, colour = "grey40") +
+  ggplot2::geom_ribbon(ggplot2::aes(ymin = lo, ymax = hi), alpha = 0.15, colour = NA) +
+  ggplot2::geom_line(linewidth = 0.8) +
+  ggplot2::scale_colour_manual(values = workplace_colours) +
+  ggplot2::scale_fill_manual(values = workplace_colours) +
+  ggplot2::scale_linetype_manual(values = workplace_linetypes) +
+  ggplot2::facet_wrap(~panel, scales = "free_x") +
+  ggplot2::labs(
+    x = "Share of business owners in the industry-year (%)",
+    y = "Wage relative to other large\nworkplaces (%)"
+  ) +
+  theme_thesis()
+```
+
+::: {.notes}
+*Notes:* This figure plots the predicted percentage difference in hourly wages between employees of each workplace type and employees of other large workplaces in the same industry and year, from the Type 0 column of @tbl-b1-placebo. The left panel varies the share of MNES owners with high English proficiency and the right panel the share with low English proficiency, each from zero to its 95th percentile, holding the other shares at zero. Shaded bands are 95 per cent confidence intervals based on standard errors clustered at the individual and industry-year levels.
+:::
+
+## Owner Income and Risk {#sec-results-block2}
+
+```{r}
+#| label: b2-text-values
+#| include: false
+# Values from contrasts_b2 (06_analysisblock2.R) quoted in the text below.
+# Income in dollars; volatility and large falls in percentage points.
+b2_row <- function(outcome, sample, group = "native", term = "owner_emp_small",
+                   comparison = "vs_same_origin_employee") {
+  contrasts_b2[contrasts_b2$outcome == outcome & contrasts_b2$sample == sample &
+                 contrasts_b2$group == group & contrasts_b2$owner_term == term &
+                 contrasts_b2$comparison == comparison, ]
+}
+b2_fmt <- function(x, outcome) {
+  out <- if (outcome == "income_t") {
+    paste0("\\$", formatC(abs(x), format = "f", digits = 0, big.mark = ","))
+  } else {
+    formatC(abs(x) * if (outcome == "large_fall") 100 else 1, format = "f", digits = 1)
+  }
+  if (x < 0) paste0("−", out) else out
+}
+# Estimate, standard error, minimum detectable difference, p-value, owners
+b2_est <- \(outcome, sample, ...) b2_fmt(b2_row(outcome, sample, ...)$estimate, outcome)
+b2_se <- \(outcome, sample, ...) b2_fmt(b2_row(outcome, sample, ...)$se, outcome)
+b2_mde <- \(outcome, sample, ...) b2_fmt(b2_row(outcome, sample, ...)$mde, outcome)
+b2_p <- \(outcome, sample, ...) fmt_p_eq(b2_row(outcome, sample, ...)$p.value)
+b2_n <- \(sample, group, term = "owner_emp_small") b2_row("income_t", sample, group, term)$n_owners
+b2_joint_p <- \(sample, outcome) fmt_p_eq(joint_tests$p.value[joint_tests$sample == sample & joint_tests$outcome == outcome])
+```
+
+If workers in these businesses hold more bargaining power, owners should bear part of the cost through lower income or greater income risk. We therefore compare owners with employees of the same origin, in the unrestricted sample (`r fmt_int(n_distinct(data_regression_2_unrestricted$xwaveid))` individuals) and the restricted sample (`r fmt_int(n_distinct(data_regression_2_pairs$xwaveid))` individuals). Low-English owners are few, with `r n_owners_cell[["employer_small:mnes_loweng"]]` low-English small employers and `r n_owners_cell[["own_account:mnes_loweng"]]` low-English own-account workers in the restricted sample (@tbl-b2-cells).
+
+### Main Results {#sec-block2-main}
+
+We report the results for small employers in two steps. @tbl-b2-main reports the *owner–employee gap*, the difference between small employers and employees *of the same origin*, which is $\theta_S$ for the native-born and $\theta_S + \theta_{Sg}$ for migrant group $g$ in @eq-owner-inc. @tbl-b2-premium then reports whether each migrant group's gap differs from the native-born gap. This difference is the premium gap $\theta_{Sg}$ that the power-reversal hypothesis predicts to be negative for income and positive for risk among low-English owners, and it is reported together with its minimum detectable difference.
+
+To take one example, in the unrestricted income column of @tbl-b2-main, native-born small employers earn `r b2_est("income_t", "unrestricted")` more than native-born employees, and low-English small employers earn `r b2_est("income_t", "unrestricted", "mnes_loweng")` more than low-English employees. The difference between these two gaps, `r b2_est("income_t", "unrestricted", "mnes_loweng", comparison = "gap_differs_from_native")`, is the first low-English entry in Panel A of @tbl-b2-premium. Its minimum detectable difference of `r b2_mde("income_t", "unrestricted", "mnes_loweng", comparison = "gap_differs_from_native")` in Panel B means that, with `r b2_n("unrestricted", "mnes_loweng")` low-English small employers, a true difference of up to about that size in either direction could go undetected.
+
+```{r}
+#| label: tbl-b2-main
+#| tbl-cap: "Owner–employee gaps in income and income risk for small employers."
+#| echo: false
+
+# Columns: dependent variable x sample. Restricted-sample names carry a
+# trailing space only so that column names are unique.
+b2_columns <- list(
+  "Income (dollars)" = list(outcome = "income_t", sample = "unrestricted"),
+  "Volatility (pp)" = list(outcome = "abs_arc_pct", sample = "unrestricted"),
+  "Large fall (pp)" = list(outcome = "large_fall", sample = "unrestricted"),
+  "Income (dollars) " = list(outcome = "income_t", sample = "restricted"),
+  "Volatility (pp) " = list(outcome = "abs_arc_pct", sample = "restricted"),
+  "Large fall (pp) " = list(outcome = "large_fall", sample = "restricted")
+)
+b2_sample_header <- list(
+  "Unrestricted sample: status at t" = 2:4,
+  "Restricted sample: same status at t−1 and t" = 5:7
+)
+b2_small <- b2_panels(contrasts_b2, "owner_emp_small", b2_columns)
+
+b2_footer <- b2_footer_rows(b2_columns)
+
+dplyr::bind_rows(b2_small$gap, b2_footer) |>
+  dplyr::rename("Dependent variable:" = Group, "Small employers (restricted sample)" = n_owners) |>
+  tinytable::tt(width = c(0.16, rep(0.11, 6), 0.10)) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(j = b2_sample_header) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, line = "b") |>
+  tinytable::style_tt(i = c(8, 10), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:8, align = "c") |>
+  pair_se_rows()
+```
+
+::: {.notes}
+*Notes:* This table reports the owner–employee gap for small employers from @eq-owner-inc, that is, the difference between small employers (owners with employees and fewer than 20 people at their workplace) and employees of the same origin, which is $\theta_S$ for the native-born and $\theta_S + \theta_{Sg}$ for migrant group $g$. The dependent variables are annual labour and business income in dollars, income volatility (the absolute arc per cent change of @eq-volatility) and the probability of an income fall of 25 per cent or more, the last two in percentage points. Each column represents a separate regression. The first three columns use the unrestricted sample, which classifies individuals by their status at $t$, and the last three use the restricted sample of individuals with the same status at $t-1$ and $t$. All columns include covariates for age and its square, sex, education, occupational tenure, marital status, remoteness, SEIFA decile and workplace type, and year, industry-year and state-year fixed effects; the volatility and large-fall columns also control for prior income decile. The last column is the number of distinct small employers in each group in the restricted income regression. All standard errors reported in parentheses are clustered at the individual and industry-year levels. Full results are reported in @tbl-b2-appendix. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: tbl-b2-premium
+#| tbl-cap: "Difference between each migrant group's owner–employee gap and the native-born gap, for small employers."
+#| echo: false
+
+jt <- joint_tests |>
+  dplyr::mutate(p = purrr::map_chr(p.value, fmt_p))
+jt_p <- c(
+  jt$p[jt$sample == "unrestricted"][match(c("income_t", "abs_arc_pct", "large_fall"), jt$outcome[jt$sample == "unrestricted"])],
+  jt$p[jt$sample == "restricted"][match(c("income_t", "abs_arc_pct", "large_fall"), jt$outcome[jt$sample == "restricted"])]
+)
+b2_joint <- tibble::tibble(Group = "Joint test of all interactions (p-value)", !!!setNames(as.list(jt_p), names(b2_columns)))
+
+dplyr::bind_rows(
+  dplyr::select(b2_small$diff, -n_owners),
+  dplyr::select(b2_small$mde, -n_owners),
+  b2_joint,
+  dplyr::select(b2_footer, -n_owners)
+) |>
+  dplyr::rename("Dependent variable:" = Group) |>
+  tinytable::tt(width = c(0.22, rep(0.115, 6))) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    i = list(
+      "Panel A: Difference from the native-born owner–employee gap" = 1,
+      "Panel B: Minimum detectable difference" = 7
+    ),
+    j = b2_sample_header
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, line = "b") |>
+  tinytable::style_tt(i = c(1, 8), italic = TRUE) |>
+  tinytable::style_tt(i = c(11, 14), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:7, align = "c") |>
+  pair_se_rows(c(1, 7))
+```
+
+::: {.notes}
+*Notes:* This table reports, for small employers, the difference between each migrant group's owner–employee gap in @tbl-b2-main and the native-born gap, which is the interaction $\theta_{Sg}$ of @eq-owner-inc. Each column represents a separate regression, with the dependent variables, samples, covariates and fixed effects of @tbl-b2-main. Panel A reports the difference. Panel B reports its minimum detectable difference, $2.8 \times \text{SE}(\theta_{Sg})$, the smallest true difference that a two-sided test at the 5 per cent level would detect with 80 per cent probability. The joint test reports the p-value of an F-test of the null hypothesis that all eight origin by owner-type interactions in the regression are jointly zero, including those for large employers and own-account workers. All standard errors reported in parentheses are clustered at the individual and industry-year levels. Full results are reported in @tbl-b2-appendix. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+Among the native-born, running a small business with employees involves a clear trade-off between income and risk. In the unrestricted sample, small employers earn `r b2_est("income_t", "unrestricted")` more per year than employees in small workplaces ($p `r b2_p("income_t", "unrestricted")`$), but the average year-to-year change in their income is `r b2_est("abs_arc_pct", "unrestricted")` percentage points larger and their probability of an income fall of 25 per cent or more is `r b2_est("large_fall", "unrestricted")` points higher.
+
+The same trade-off holds for every migrant group. Small employers earn more than employees of their own origin, and in every group they face much higher volatility and downside risk. In the unrestricted sample the income gap is `r b2_est("income_t", "unrestricted", "mnes_higheng")` for high-English migrants ($p `r b2_p("income_t", "unrestricted", "mnes_higheng")`$) and `r b2_est("income_t", "unrestricted", "mnes_loweng")` for low-English migrants ($p `r b2_p("income_t", "unrestricted", "mnes_loweng")`$), while for MES migrants it is smaller and only marginally significant (`r b2_est("income_t", "unrestricted", "mes")`, $p `r b2_p("income_t", "unrestricted", "mes")`$). Ownership with employees therefore looks like compensated risk for all groups, not the uncompensated risk that the power-reversal hypothesis predicts for owners with limited English.
+
+None of the differences from the native-born gap for low-English small employers is significant (@tbl-b2-premium). Their risk gaps point in the predicted direction, with volatility `r b2_est("abs_arc_pct", "unrestricted", "mnes_loweng", comparison = "gap_differs_from_native")` percentage points higher and the probability of a large fall `r b2_est("large_fall", "unrestricted", "mnes_loweng", comparison = "gap_differs_from_native")` points higher than the native-born comparison would imply, but the income premium gap is positive (`r b2_est("income_t", "unrestricted", "mnes_loweng", comparison = "gap_differs_from_native")`), not negative. With `r b2_n("unrestricted", "mnes_loweng")` low-English small employers in the unrestricted sample and `r b2_n("restricted", "mnes_loweng")` in the restricted sample, these estimates are very imprecise. The minimum detectable differences are `r b2_mde("income_t", "unrestricted", "mnes_loweng", comparison = "gap_differs_from_native")` for income, `r b2_mde("abs_arc_pct", "unrestricted", "mnes_loweng", comparison = "gap_differs_from_native")` percentage points for volatility and `r b2_mde("large_fall", "unrestricted", "mnes_loweng", comparison = "gap_differs_from_native")` percentage points for downside risk, so the data cannot rule out large differences in either direction. High-English small employers, if anything, face less volatility than the native-born comparison would imply (`r b2_est("abs_arc_pct", "unrestricted", "mnes_higheng", comparison = "gap_differs_from_native")` points, $p `r b2_p("abs_arc_pct", "unrestricted", "mnes_higheng", comparison = "gap_differs_from_native")`$), and MES small employers are close to their native-born counterparts on every outcome.
+
+### Heterogeneity by Owner Type {#sec-block2-het}
+
+@tbl-b2-large and @tbl-b2-ownacc report the same comparisons for large employers and own-account workers. Large migrant employers are too few for firm conclusions. Their income estimates are dominated by a handful of very high incomes, with a standard error of `r b2_se("income_t", "unrestricted", "mes", term = "owner_emp_large", comparison = "gap_differs_from_native")` for the difference between MES and native-born large employers, so the data cannot show whether migrant-specific gaps are larger in small than in large businesses. Own-account workers earn less than employees of their own origin in every group, although not significantly so for every migrant group (`r b2_est("income_t", "unrestricted", term = "own_acc")` among the native-born in the unrestricted sample), and face even more volatility than small employers. The joint test that all origin by owner-type interactions are zero is marginally significant for volatility in the restricted sample ($p `r b2_joint_p("restricted", "abs_arc_pct")`$), but not in the unrestricted sample ($p `r b2_joint_p("unrestricted", "abs_arc_pct")`$), nor for income or downside risk in either sample. As @tbl-b2-ownacc shows, the restricted-sample result comes mainly from own-account workers.
+
+Low-English own-account workers stand out. In the restricted sample, their income appears much less volatile than the native-born comparison implies (`r b2_est("abs_arc_pct", "restricted", "mnes_loweng", term = "own_acc", comparison = "gap_differs_from_native")` percentage points, $p `r b2_p("abs_arc_pct", "restricted", "mnes_loweng", term = "own_acc", comparison = "gap_differs_from_native")`$). In the unrestricted sample, which also includes those who became own-account workers between the two years, the difference is smaller and not significant (`r b2_est("abs_arc_pct", "unrestricted", "mnes_loweng", term = "own_acc", comparison = "gap_differs_from_native")` points, $p `r b2_p("abs_arc_pct", "unrestricted", "mnes_loweng", term = "own_acc", comparison = "gap_differs_from_native")`$). The apparent protection from risk is therefore concentrated among the `r b2_n("restricted", "mnes_loweng", "own_acc")` low-English own-account workers who stay in that status in both years.
+
+### Robustness and Sensitivity Checks {#sec-block2-robust}
+
+*Changes of status between waves.* HILDA measures income over the financial year before the interview, so for people who changed status between interviews, income at $t$ partly reflects their earlier status. We therefore estimate every model on both samples. Restricting the sample to individuals whose status is unchanged gives larger native-born gaps, of `r b2_est("income_t", "restricted")` in income, `r b2_est("abs_arc_pct", "restricted")` points in volatility and `r b2_est("large_fall", "restricted")` points in downside risk, but the same pattern across origin groups. The comparison between owners and employees is therefore not driven by people who changed status between the two years.
+
+*Attrition.* Owners who are not re-interviewed at $t$ drop out of both samples, which would bias the comparisons if attrition differed by origin. Attrition is similar across groups, at 5 to 8 per cent a year among small employers (@tbl-b2-cells), so it is unlikely to explain the results. Neither sample, however, measures the income consequences of a business closing.
+
+*Hours of work.* Annual income does not account for the longer hours that owners typically work. We therefore compare the median hourly income of owners with employees with the median hourly wage of employees of small independent workplaces, by industry and without controls (@sec-appendix-gap). Owners earn less per hour than employees in several low-margin industries, such as accommodation and food services, so the income premium in @tbl-b2-main does not hold in every industry once hours are taken into account. The full regression estimates, including all controls, are in @tbl-b2-appendix.
+
+## Entry into Business Ownership {#sec-results-block3}
+
+Ownership with employees pays more than paid employment but brings more volatile income, which raises the question of who takes on that risk. Unconditional entry rates are `r b3_rate("native")` per cent a year for the native-born, `r b3_rate("mes")` per cent for MES migrants, `r b3_rate("mnes_higheng")` per cent for high-English MNES migrants and `r b3_rate("mnes_loweng")` per cent for low-English MNES migrants (@tbl-b3-sample). The low-English group contributes only `r b3_n_le` at-risk person-pairs and `r b3_e_le` entries, partly because its weak panel persistence (@tbl-panel) excludes many of its members from a sample that requires consecutive observations.
+
+### Main Results {#sec-block3-main}
+
+```{r}
+#| label: tbl-b3-main
+#| tbl-cap: "Entry into business ownership between t−1 and $t$ (logit coefficients)."
+#| echo: false
+# Wald chi-squared test that the four labour market and liquidity terms are zero
+push_wald <- function(m) {
+  w <- wald_chisq(m, c("unemployed_l1", "nilf_l1", "low_wage_l1", "liquidity_l1"))
+  sprintf("%.2f (%s)", w$stat, fmt_p(w$p))
+}
+
+models3 <- list(
+  "Origin only" = regression3_v1a,
+  "Labour market only" = regression3_v2a,
+  "Origin and labour market" = regression3_v3a,
+  "Adding human capital" = regression3_v4a
+)
+
+cm3_main <- c(
+  "origin_groupmes" = "Migrant with English-speaking origin",
+  "origin_groupmnes_higheng" = "Migrant from other origin with high English proficiency",
+  "origin_groupmnes_loweng" = "Migrant from other origin with low English proficiency",
+  "unemployed_l1" = "Unemployed",
+  "nilf_l1" = "Not in labour force",
+  "low_wage_l1" = "Bottom wage quintile",
+  "liquidity_l1" = "Liquidity constrained"
+)
+
+modelsummary::modelsummary(
+  models3,
+  coef_map = cm3_main,
+  gof_map = gof_comma(tribble(
+    ~raw   , ~clean        , ~fmt ,
+    "nobs" , "Observations (person-pairs)" ,    0 ,
+    "aic"  , "AIC"         ,    0 ,
+    "bic"  , "BIC"         ,    0
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  add_rows = tibble::tribble(
+    ~term               , ~`Origin only` , ~`Labour market only`                     , ~`Origin and labour market`                     , ~`Adding human capital`                     ,
+    "Individuals"       , fmt_int(n_individuals_model(regression3_v1a)), fmt_int(n_individuals_model(regression3_v2a)), fmt_int(n_individuals_model(regression3_v3a)), fmt_int(n_individuals_model(regression3_v4a)),
+    "Year FEs"          , "Yes"  , "Yes"                      , "Yes"                      , "Yes"                      ,
+    "Industry-year FEs" , "Yes"  , "Yes"                      , "Yes"                      , "Yes"                      ,
+    "State-year FEs"    , "Yes"  , "Yes"                      , "Yes"                      , "Yes"                      ,
+    "Education and employer tenure" , "No" , "No"            , "No"                       , "Yes"                      ,
+    "Wald χ² (p-value)" , ""     , push_wald(regression3_v2a) , push_wald(regression3_v3a) , push_wald(regression3_v4a)
+  ),
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: entry into business ownership (logit)" = 2:5),
+    i = list(
+      "Origin and English proficiency" = 1,
+      "Labour-market position at t−1" = 7
+    )
+  ) |>
+  tinytable::style_tt(i = c(1, 8), italic = TRUE) |>
+  tinytable::style_tt(i = c(0, 16, 25), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:5, align = "c") |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  pair_se_rows(c(1, 7))
+```
+
+::: {.notes}
+*Notes:* This table reports logit estimates of @eq-transition for person-pairs in which the individual is not a business owner at $t-1$. The dependent variable equals one if the individual is an own-account worker or employer at $t$. Each column adds regressors in steps, starting with origin group only, then labour-market position and liquidity at $t-1$ only, then both and finally both with education and employer tenure at $t-1$. All columns include covariates for age and its square, sex, years in Australia, marital status, home ownership, SEIFA decile and remoteness, and year, industry-year and state-year fixed effects; columns with the liquidity constraint also include an indicator for a missing liquidity measure. Coefficients are log-odds, and the reference categories are the Australian-born and employees who were not low-paid and not liquidity constrained at $t-1$. The Wald χ² statistic, with its p-value in parentheses, tests the null hypothesis that the four labour-market and liquidity coefficients are jointly zero. All standard errors reported in parentheses are clustered at the individual level. Full results are reported in @tbl-b3-full. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+@tbl-b3-main reports logit estimates of @eq-transition, adding regressors in steps across the four columns. Weak labour market positions are the strongest predictors of entry.[^odds] Relative to employees who are not low-paid, unemployed individuals have `r b3_or(regression3_v3a, "unemployed_l1")` times the odds of entering ownership ($\beta = `r b3_b(regression3_v3a, "unemployed_l1")`$ in the *Origin and labour market* column), those outside the labour force `r b3_or(regression3_v3a, "nilf_l1")` times and employees in the bottom wage quintile `r b3_or(regression3_v3a, "low_wage_l1")` times. Liquidity-constrained individuals are modestly more likely to enter (odds ratio `r b3_or(regression3_v3a, "liquidity_l1")`). These coefficients change little across the last three columns, and adding education and employer tenure lowers the unemployment coefficient only from `r b3_b(regression3_v3a, "unemployed_l1")` to `r b3_b(regression3_v4a, "unemployed_l1")`. None of the origin coefficients is significant in any column. The low-English coefficient is the largest in magnitude (`r b3_b(regression3_v4a, "origin_groupmnes_loweng")` in the last column), but its standard error of `r fmt_num(fixest::se(regression3_v4a)[["origin_groupmnes_loweng"]], 2)` means that the data cannot distinguish large differences from none. Entry also rises with qualifications and falls with tenure with the current employer (@tbl-b3-full), which suggests that push and pull motives operate together.
+
+[^odds]: The odds ratio is $\exp(\beta)$, the multiplicative change in the odds of entry for the given category relative to the reference category. For example, $\exp(`r b3_b(regression3_v3a, "unemployed_l1")`) = `r b3_or(regression3_v3a, "unemployed_l1")`$, so the odds of entry are `r fmt_num(100 * (exp(b3_coef(regression3_v3a, "unemployed_l1")) - 1), 0)` per cent higher for the unemployed than for employees.
+
+```{r}
+#| label: b3-position-values
+#| include: false
+# Values for the paragraph below: difference from the native-born in each
+# position at t-1 (Table D.5, Panel B) and shares among entrants (Panel C)
+pos_pp <- \(v, g = "mnes_loweng") sprintf("%.1f", coef(regression3_push_position[[v]])[[paste0("origin_group::", g)]])
+pos_p <- \(v, g = "mnes_loweng") fmt_p_eq(fixest::pvalue(regression3_push_position[[v]])[[paste0("origin_group::", g)]])
+entrant_share <- function(v, g) {
+  d <- data_regression_3[data_regression_3$entry_owner == 1 & data_regression_3$origin_group == g, ]
+  if (v == "liquidity_l1") d <- d[d$liquidity_miss_l1 == 0, ]
+  sprintf("%.1f", 100 * mean(d[[v]]))
+}
+n_entries_loweng <- sum(data_regression_3$entry_owner[data_regression_3$origin_group == "mnes_loweng"])
+```
+
+These positions can explain migrant entry only if migrants are more likely to be in them, so @tbl-b3-push-shares compares the origin groups among people at risk of entry. Holding age, sex and year fixed, low-English migrants are more likely than the native-born to be unemployed (by `r pos_pp("unemployed_l1")` percentage points, $p `r pos_p("unemployed_l1")`$), outside the labour force (by `r pos_pp("nilf_l1")` points, $p `r pos_p("nilf_l1")`$) and in the bottom wage quintile (by `r pos_pp("low_wage_l1")` points, $p `r pos_p("low_wage_l1")`$), and somewhat more likely to be liquidity constrained (by `r pos_pp("liquidity_l1")` points, $p `r pos_p("liquidity_l1")`$). The same pattern appears among those who do enter. Among low-English entrants, `r entrant_share("unemployed_l1", "mnes_loweng")` per cent were unemployed in the year before entry and `r entrant_share("low_wage_l1", "mnes_loweng")` per cent were in the bottom wage quintile, compared with `r entrant_share("unemployed_l1", "native")` and `r entrant_share("low_wage_l1", "native")` per cent of native-born entrants, although these shares rest on only `r n_entries_loweng` low-English entries.
+
+### Heterogeneity by Origin {#sec-block3-het}
+
+@tbl-b3-het allows the push from unemployment and low wages to differ by origin (@eq-transition-het). For the native-born, unemployment raises the odds of entry by a factor of `r b3_push_or(regression3_v9a, "unemployed_l1", "native")` and low wages by `r b3_push_or(regression3_v9a, "low_wage_l1", "native")`. The push is at least as strong for every migrant group. For low-English migrants, unemployment raises the odds of entry by a factor of `r b3_push_or(regression3_v9a, "unemployed_l1", "mnes_loweng")`, which is `r b3_or(regression3_v9a, b3_inter("mnes_loweng", "unemployed_l1"))` times the native-born push ($p `r b3_p(regression3_v9a, b3_inter("mnes_loweng", "unemployed_l1"))`$). For MES migrants, low wages raise the odds by a factor of `r b3_push_or(regression3_v9a, "low_wage_l1", "mes")`, `r b3_or(regression3_v9a, b3_inter("mes", "low_wage_l1"))` times the native-born push ($p `r b3_p(regression3_v9a, b3_inter("mes", "low_wage_l1"))`$), and for high-English migrants the push from unemployment is `r b3_or(regression3_v9a, b3_inter("mnes_higheng", "unemployed_l1"))` times the native-born push ($p `r b3_p(regression3_v9a, b3_inter("mnes_higheng", "unemployed_l1"))`$). The six interactions are jointly significant ($p `r fmt_p_eq(fixest::wald(regression3_v9a, keep = ":(unemployed|low_wage)_l1$", print = FALSE)$p)`$). The low-English estimate is large but rests on only `r b3_n_ue_le` entries among unemployed low-English migrants, so its confidence interval is wide.
+
+```{r}
+#| label: tbl-b3-het
+#| tbl-cap: "Push into business ownership from unemployment and low wages, by origin group."
+#| echo: false
+
+# Odds ratio exp(sum of the coefficients in `terms`) with its stars, and its
+# 95% confidence interval in brackets for the row below
+b3_or_cells <- function(m, terms) {
+  b <- coef(m)
+  w <- as.numeric(names(b) %in% terms)
+  est <- sum(w * b)
+  se <- sqrt(drop(t(w) %*% vcov(m) %*% w))
+  c(
+    sprintf("%.2f%s", exp(est), add_stars(2 * pnorm(-abs(est / se)))),
+    sprintf("[%.2f, %.2f]", exp(est - 1.96 * se), exp(est + 1.96 * se))
+  )
+}
+
+# Push for group g (main effect plus interaction), and the interaction alone
+b3_push_cells <- function(m, push, g) {
+  if (g == "native") return(c(b3_or_cells(m, push), "Ref.", ""))
+  inter <- paste0("origin_group", g, ":", push)
+  c(b3_or_cells(m, c(push, inter)), b3_or_cells(m, inter))
+}
+
+entries_unemp <- data_regression_3 |>
+  dplyr::filter(unemployed_l1 == 1) |>
+  dplyr::summarise(n = sum(entry_owner), .by = origin_group)
+
+b3_het <- purrr::map_dfr(names(group_labels), \(g) {
+  u <- b3_push_cells(regression3_v9a, "unemployed_l1", g)
+  w <- b3_push_cells(regression3_v9a, "low_wage_l1", g)
+  # Odds of entry of group g relative to the native-born among employees who
+  # are not low-paid (the omitted labour market category): exp(phi_g)
+  s <- if (g == "native") c("Ref.", "") else b3_or_cells(regression3_v9a, paste0("origin_group", g))
+  tibble::tibble(
+    `Origin group` = c(group_labels[[g]], ""),
+    `Odds ratio` = u[1:2], `Relative to native-born` = u[3:4],
+    `Odds ratio ` = w[1:2], `Relative to native-born ` = w[3:4],
+    `Odds ratio when stably employed` = s,
+    `Entries among the unemployed` = c(fmt_int(entries_unemp$n[entries_unemp$origin_group == g]), "")
+  )
+})
+
+b3_het |>
+  dplyr::bind_rows(tibble::tibble(
+    `Origin group` = c("Observations (person-pairs)", "Individuals", "Joint test of interactions (p-value)"),
+    `Odds ratio` = c(
+      fmt_int(nobs(regression3_v9a)),
+      fmt_int(n_individuals_model(regression3_v9a)),
+      fmt_p(fixest::wald(regression3_v9a, keep = ":(unemployed|low_wage)_l1$", print = FALSE)$p)
+    )
+  )) |>
+  dplyr::mutate(dplyr::across(dplyr::everything(), \(x) dplyr::coalesce(x, ""))) |>
+  tinytable::tt(width = c(0.20, rep(0.12, 6))) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(j = list("Unemployed at t−1" = 2:3, "Bottom wage quintile at t−1" = 4:5)) |>
+  tinytable::group_tt(j = list("Dependent variable: entry into business ownership (logit)" = 2:7)) |>
+  tinytable::style_tt(i = -2, line = "t") |>
+  tinytable::style_tt(i = 0, line = "b") |>
+  tinytable::style_tt(i = c(8, 11), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:7, align = "c") |>
+  pair_se_rows()
+```
+
+::: {.notes}
+*Notes:* This table reports odds ratios from the logit estimation of @eq-transition-het, which interacts origin group with unemployment and the bottom wage quintile at $t-1$. The dependent variable equals one if an individual who is not a business owner at $t-1$ is an own-account worker or employer at $t$. *Odds ratio* is the push into ownership for each origin group relative to employees who are not low-paid, $\exp(\phi_1 + \theta^U_g)$ for unemployment and $\exp(\phi_3 + \theta^W_g)$ for low wages. *Relative to native-born* is $\exp(\theta^U_g)$ or $\exp(\theta^W_g)$, the ratio of the group's push to the native-born push. *Odds ratio when stably employed* is $\exp(\phi_g)$, the odds of entry relative to the native-born among employees who are neither unemployed nor low-paid at $t-1$. *Entries among the unemployed* is the number of entries on which each unemployment estimate rests. The model includes the covariates and fixed effects of the *Adding human capital* column of @tbl-b3-main. The joint test reports the p-value of a Wald test of the null hypothesis that the six origin by labour-market interactions are jointly zero. All 95 per cent confidence intervals reported in brackets are based on standard errors clustered at the individual level. Stars test the null that the odds ratio equals one. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+Among individuals who were employed and not low-paid at $t-1$, low-English migrants are less likely than the native-born to enter (odds ratio `r b3_or(regression3_v9a, "origin_groupmnes_loweng")`, $p `r b3_p(regression3_v9a, "origin_groupmnes_loweng")`$). The low unconditional entry rate of this group therefore reflects low entry among those in stable employment, alongside a strong push among the unemployed.
+
+### Robustness and Sensitivity Checks {#sec-block3-robust}
+
+```{r}
+#| label: b3-lpm-values
+#| include: false
+# Coefficient (percentage points) and p-value from the Block 3 linear
+# probability models, for the text below
+lpm_b <- \(m, term) sprintf("%.2f", coef(m)[[term]])
+lpm_p <- \(m, term) fmt_p_eq(fixest::pvalue(m)[[term]])
+lpm_joint <- \(m) fmt_p_eq(fixest::wald(m, keep = ":(unemployed|low_wage)_l1$", print = FALSE)$p)
+```
+
+*Timing of labour market status.* A push from unemployment could run in reverse if people left work to prepare a business they had already decided to start, in which case status at $t-1$ would partly reflect the entry decision. @tbl-b3-robust therefore re-estimates the heterogeneity model with labour market status measured at $t-1$, at $t-2$ and at both, on the `r fmt_int(nobs(regression3_timing_l1))` person-pairs for which status two years before entry is observed. For the native-born, the push from unemployment is confined to the year before entry. Measured at $t-2$, unemployment does not predict entry (coefficient $`r b3_b(regression3_timing_l2, "unemployed_l2")`$), and when status at both $t-1$ and $t-2$ is included, the $t-1$ coefficient is $`r b3_b(regression3_timing_both, "unemployed_l1")`$. Native-born entry therefore follows recent labour market weakness, which is consistent either with recent job loss pushing people into ownership or with anticipation of entry, and the data cannot separate the two. For low-English migrants, unemployment two years before entry also predicts entry strongly (interaction $`r b3_b(regression3_timing_l2, b3_inter("mnes_loweng", "unemployed_l2"))`$, $p `r b3_p(regression3_timing_l2, b3_inter("mnes_loweng", "unemployed_l2"))`$). Their push reflects a persistent condition, not a spell immediately before entry, which is harder to explain by anticipation.
+
+*Stable personal traits.* Without individual fixed effects, the push could reflect stable traits that affect both labour market position and entry. The last column of @tbl-b3-robust adds each individual's mean of the time-varying regressors, so that the push coefficients compare an individual with themselves at other times [@mundlak_pooling_1978]. The push from unemployment survives within the same person (coefficient $`r b3_b(regression3_mundlak, "unemployed_l1")`$, $p `r b3_p(regression3_mundlak, "unemployed_l1")`$), as does the extra push for low-English migrants (interaction $`r b3_b(regression3_mundlak, b3_inter("mnes_loweng", "unemployed_l1"))`$, $p `r b3_p(regression3_mundlak, b3_inter("mnes_loweng", "unemployed_l1"))`$). The push from low wages does not survive ($`r b3_b(regression3_mundlak, "low_wage_l1")`$, $p `r b3_p(regression3_mundlak, "low_wage_l1")`$), which suggests that low wages predict entry because persistently low-paid people enter more, not because a fall in pay pushes a given person into ownership.
+
+*Probability scale.* Odds ratios can make an effect look large for a group whose baseline entry rate is low, so we re-estimate the main and heterogeneity specifications as linear probability models (@tbl-b3-lpm). The main results are unchanged on the probability scale. In the *Origin and labour market* column, unemployment at $t-1$ raises the annual probability of entry by `r lpm_b(regression3_lpm_v3, "unemployed_l1")` percentage points, against a mean entry rate of about 2 per cent, non-participation by `r lpm_b(regression3_lpm_v3, "nilf_l1")` points and low wages by `r lpm_b(regression3_lpm_v3, "low_wage_l1")` points. The heterogeneity estimates agree in sign with the logit but not always in significance. The extra push from low wages for MES migrants (`r lpm_b(regression3_lpm_het, "origin_groupmes:low_wage_l1")` points, $p `r lpm_p(regression3_lpm_het, "origin_groupmes:low_wage_l1")`$) remains, and the six interactions are jointly significant ($p `r lpm_joint(regression3_lpm_het)`$), but the extra push from unemployment for low-English migrants, although large in absolute terms (`r lpm_b(regression3_lpm_het, "origin_groupmnes_loweng:unemployed_l1")` points), is no longer significant ($p `r lpm_p(regression3_lpm_het, "origin_groupmnes_loweng:unemployed_l1")`$). This is the difference between the two scales described by @ai_interaction_2003. Low-English migrants rarely enter from stable employment, so a large proportional rise in their odds of entry corresponds to a smaller rise in probability, which is estimated imprecisely given the few entries involved.
+
+With individual fixed effects (last column of @tbl-b3-lpm), unemployment and low wages still raise the probability of entry within the same person, by `r lpm_b(regression3_lpm_het_fe, "unemployed_l1")` and `r lpm_b(regression3_lpm_het_fe, "low_wage_l1")` points. The extra push from unemployment for low-English migrants, which survives the person-means logit, disappears with fixed effects (`r lpm_b(regression3_lpm_het_fe, "origin_group::mnes_loweng:unemployed_l1")` points), and the six interactions are only marginally significant jointly ($p `r lpm_joint(regression3_lpm_het_fe)`$). The push from unemployment for the population as a whole is therefore robust to the estimator, while whether the larger push for low-English migrants operates within a person depends on the estimator, and given the few entries involved we do not draw a firm conclusion.

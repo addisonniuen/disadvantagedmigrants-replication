@@ -1,0 +1,54 @@
+\begin{table}
+\centering
+\begin{tblr}[         %% tabularray outer open
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]Q[]Q[]},
+hline{2}={3-5}{solid, black, 0.03em},
+hline{2}={2}{solid, black, 0.03em, l=-0.5},
+hline{1}={1-5}{solid, black, 0.1em},
+hline{3}={1-5}{solid, black, 0.1em},
+hline{19}={1-5}{solid, black, 0.1em},
+hline{28}={1-5}{solid, black, 0.1em},
+cell{1-2,4-9,11-27}{3}={}{halign=c},
+cell{1-2,4-9,11-27}{4}={}{halign=c},
+cell{1-2,4-9,11-27}{5}={}{halign=c},
+cell{1-2,5,7,9,12,14,16,18-27}{1}={}{halign=l},
+cell{1}{2}={c=4}{halign=c},
+cell{2,4-9,11-27}{2}={}{halign=c},
+cell{3,10}{1}={c=5}{font=\itshape, halign=l},
+cell{3,10}{2}={}{font=\itshape, halign=c},
+cell{3,10}{3}={}{font=\itshape, halign=c},
+cell{3,10}{4}={}{font=\itshape, halign=c},
+cell{3,10}{5}={}{font=\itshape, halign=c},
+cell{4,6,8,11,13,15,17}{1}={r=2}{halign=l, valign=h},
+}                     %% tabularray inner close
+& Dependent variable: entry into business ownership (logit) &  &  &  \\
+& Origin only & Labour market only & Origin and labour market & Adding human capital \\
+Origin and English proficiency & Origin and English proficiency & Origin and English proficiency & Origin and English proficiency & Origin and English proficiency \\
+Migrant with English-speaking origin & 0.038 &  & 0.075 & -0.022 \\
+& (0.087) &  & (0.087) & (0.088) \\
+Migrant from other origin with high English proficiency & 0.053 &  & 0.066 & -0.059 \\
+& (0.084) &  & (0.083) & (0.084) \\
+Migrant from other origin with low English proficiency & -0.098 &  & -0.230 & -0.256 \\
+& (0.207) &  & (0.208) & (0.207) \\
+Labour-market position at t−1 & Labour-market position at t−1 & Labour-market position at t−1 & Labour-market position at t−1 & Labour-market position at t−1 \\
+Unemployed &  & 0.777∗∗∗ & 0.777∗∗∗ & 0.700∗∗∗ \\
+&  & (0.067) & (0.067) & (0.068) \\
+Not in labour force &  & 0.588∗∗∗ & 0.590∗∗∗ & 0.491∗∗∗ \\
+&  & (0.048) & (0.048) & (0.052) \\
+Bottom wage quintile &  & 0.406∗∗∗ & 0.408∗∗∗ & 0.430∗∗∗ \\
+&  & (0.047) & (0.047) & (0.048) \\
+Liquidity constrained &  & 0.151∗∗∗ & 0.152∗∗∗ & 0.149∗∗∗ \\
+&  & (0.038) & (0.038) & (0.038) \\
+Observations (person-pairs) & 289,616 & 289,616 & 289,616 & 289,616 \\
+AIC & 54352 & 53974 & 53976 & 53786 \\
+BIC & 61460 & 61102 & 61136 & 61020 \\
+Individuals & 28,626 & 28,626 & 28,626 & 28,626 \\
+Year FEs & Yes & Yes & Yes & Yes \\
+Industry-year FEs & Yes & Yes & Yes & Yes \\
+State-year FEs & Yes & Yes & Yes & Yes \\
+Education and employer tenure & No & No & No & Yes \\
+Wald χ² (p-value) &  & 268.05 (< 0.001) & 268.83 (< 0.001) & 197.35 (< 0.001) \\
+\end{tblr}
+\end{table}

@@ -1,0 +1,7 @@
+# Abstract {#sec-abstract .unnumbered}
+
+Labour regulation presumes employers hold bargaining power over employees. This presumption may fail in small businesses whose migrant owners have limited English and depend on employees’ local and institutional knowledge. We formalise this power reversal as bargaining under compliance risk and test three implications using the Household, Income and Labour Dynamics in Australia Survey. Fixed-effects regressions exploiting industry variation in migrant ownership by English proficiency show the 11 per cent wage penalty in small independent workplaces narrows where English-proficient migrant owners are common, but not where owners have limited English. Employers out-earn employees of their own origin but bear greater income volatility, with no detectable difference by origin. Entry into ownership follows labour market detachment and low earnings, with the push from unemployment strongest for migrants with limited English. Although we find little evidence of direct power reversal, migrants with limited English often enter ownership from weak economic positions.
+
+**Keywords:** power reversal, migrant entrepreneurship, small business
+
+{{< pagebreak >}}

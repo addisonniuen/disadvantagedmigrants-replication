@@ -1,0 +1,101 @@
+# Methodology {#sec-methodology}
+
+The framework in @sec-conceptual-framework concerns relationships that are rarely observed directly, namely the terms on which migrant owners employ workers, the risks those owners bear and the circumstances in which migrants become owners. HILDA does not link workers to their employers, so we cannot compare the same worker employed by a migrant and by a native-born owner. We instead test three observable implications of the framework, each with its own sample (@sec-data-samples) and source of variation. No single analysis is decisive, so we read the framework as supported only where the three point in the same direction.
+
+## Employee Wages {#sec-block1}
+
+If limited English weakens an owner's bargaining position, the workers of such owners should be paid more. We test this by asking whether the wage gap between small independent workplaces and other workplaces in the same industry and year varies with migrant owner density (@sec-loo-shares). The model is specified as follows,
+
+$$
+\begin{aligned}
+\log w_{it} = {} & \delta_t + \mu_{kt} + \nu_{rt} \\
+& + \beta_1 \text{SmallSingleSite}_{it} + \beta_2 \text{SmallSiteChain}_{it} + \beta_3 \text{ChainLike}_{it} \\
+& + \beta_4 \left(\text{SmallSingleSite}_{it} \times S^{\text{MES}}_{kt}\right) \\
+& + \beta_5 \left(\text{SmallSingleSite}_{it} \times S^{\text{MNES}_{\text{HighEng}}}_{kt}\right) \\
+& + \beta_6 \left(\text{SmallSingleSite}_{it} \times S^{\text{MNES}_{\text{LowEng}}}_{kt}\right) + \mathbf{X}'_{it}\boldsymbol{\pi} + \epsilon_{it},
+\end{aligned}
+$${#eq-employee-wage}
+
+where $w_{it}$ is employee $i$'s hourly wage in year $t$, the three workplace types are defined in @sec-data-workplace and $S^{g}_{kt}$ is the share of business owners in employee $i$'s industry $k$ and year $t$ who belong to origin group $g$ (@eq-loo-shares). The terms $\delta_t$, $\mu_{kt}$ and $\nu_{rt}$ are year, industry-by-year and state-by-year fixed effects. The vector $\mathbf{X}_{it}$ contains age, sex, the worker's origin group, education, occupation, casual or permanent employment, occupational tenure, employer tenure, union membership and the decile of area disadvantage (SEIFA). We estimate the model by OLS without survey weights, since sampling is exogenous to wages conditional on the controls [@solon_what_2015], and cluster standard errors by individual and by industry-year.
+
+The coefficients $\beta_1$ to $\beta_3$ measure the wage gap of each workplace type relative to other workplaces with 20 or more people in the same industry and year. The interactions $\beta_4$ to $\beta_6$ measure how the small single-site gap changes as the share of owners from group $g$ rises. The owner shares vary only by industry and year, so $\mu_{kt}$ absorbs their main effects together with any shock common to all workers in an industry and year, such as changes in demand or award wages. The interactions are therefore identified from comparisons between workplace types within the same industry and year.
+
+To interpret the interactions, consider three explanations. First, if owners with limited English depend on their workers for local knowledge, as in the power-reversal mechanism (Result 3), the gap should narrow where these owners are common, so $\beta_6 > 0$. Second, if limited outside options and weak enforcement dominate, the gap should widen, so the interactions should be negative and most negative for $\beta_6$. Third, if shared language and networks improve the quality of job matches, $\beta_5$ and $\beta_6$ should be non-negative. Positive interactions are therefore consistent with both power reversal and better job matching, and only their pattern across groups separates the two, since power reversal predicts a narrowing concentrated where owners have limited English. Owners from main English-speaking countries face no language barrier, so $\beta_4$ should be close to zero and serves as a benchmark for $\beta_5$ and $\beta_6$.
+
+The estimates rely on the assumption that, conditional on the fixed effects and controls, migrant owner density is uncorrelated with unobserved determinants of wages specific to small independent workplaces. The assumption would fail if migrant owners set up firms in industries where small-firm pay is already relatively high, in which case our estimates would overstate any effect of migrant ownership. We do not include individual fixed effects, which would absorb the worker's origin group and identify the interactions only from workers who move between workplace types, so the estimates are conditional associations. We assess their sensitivity by re-estimating the model with the two decay weightings of @sec-assimilation, with small workplaces defined at 10 and 50 employees, with the owner shares built at the two-digit industry level and with the three origin-specific shares replaced by the share of all migrant owners and the share of low-English owners. We also interact the owner shares with small sites of multi-site employers and with chain-like workplaces. These workplaces are rarely migrant-owned, so if the main interactions reflect migrant ownership and not industry pay structure, these additional interactions should be close to zero.
+
+## Owner Income and Risk {#sec-block2}
+
+A shift in bargaining power towards workers should also leave a mark on owners, through lower income or greater exposure to income risk. A natural question is therefore whether migrant owners with employees, and those with limited English in particular, earn less or bear more risk than employees of the same origin. The returns to ownership differ sharply between owners with and without employees [@hamilton_does_2000; @sorgner_entrepreneurs_2017], and owners bear income risk as residual claimants [@bhandari_nature_2026; @audoly_self-employment_2025]. We therefore study employers and own-account workers separately and examine the risk of income as well as its level.
+
+Measuring risk requires income in consecutive years, so the unit of analysis is a pair of consecutive waves $t-1$ and $t$ [@ziliak_earnings_2011]. We examine three outcomes built from annual labour and business income $y_{it}$. The first is its level. The second is its volatility, measured by the absolute arc per cent change [@brewer_what_2025],
+
+$$
+|a_{it}| = 100 \times \frac{\left|y_{it} - y_{i,t-1}\right|}{\left(|y_{it}| + |y_{i,t-1}|\right)/2}.
+$${#eq-volatility}
+
+The third is downside risk, an indicator for an income fall of at least 25 per cent among individuals with positive income at $t-1$, $\text{LargeFall}_{it} = \mathbf{1}[y_{it} \le 0.75\, y_{i,t-1}]$ [@hacker_economic_2014; @rohde_economic_2015]. The arc per cent change is scale-invariant, so it does not understate volatility among low-income groups. It is defined when income is zero in one year and, with absolute values in the denominator, stays between 0 and 200 even when business income is negative [@ziliak_earnings_2011]. Its mean is the summary of volatility recommended for subgroup comparisons, since it is less sensitive to extreme changes than variance-based measures [@brewer_what_2025].
+
+We estimate each outcome on the unrestricted and restricted samples of @sec-data-samples. HILDA measures income over the financial year ending on 30 June, while employment status is recorded at the interview a few months later. For people who changed status between interviews, income at $t$ therefore partly reflects their earlier status. The restricted sample, in which status is unchanged, avoids this problem, so we treat it as the cleaner estimate and use the comparison between the two samples to show how much of the gaps comes from recent changes of status. For each outcome $Y_{it} \in \{y_{it},\ |a_{it}|,\ \text{LargeFall}_{it}\}$ and each sample, the model is specified as follows,
+
+$$
+\begin{aligned}
+Y_{it} = {} & \delta_t + \mu_{kt} + \nu_{rt} \\
+& + \theta_S \text{SmallEmployer}_{it} + \theta_L \text{LargeEmployer}_{it} + \theta_O \text{OwnAccountWorker}_{it} \\
+& + \sum_{g \,\in\, \mathcal{G} \setminus \{\text{Native}\}} \gamma_g \mathbf{1}[G_i=g] \\
+& + \sum_{g \,\in\, \mathcal{G} \setminus \{\text{Native}\}} \theta_{Sg} \left( \text{SmallEmployer}_{it} \times \mathbf{1}[G_i=g] \right) \\
+& + \sum_{g \,\in\, \mathcal{G} \setminus \{\text{Native}\}} \theta_{Lg} \left( \text{LargeEmployer}_{it} \times \mathbf{1}[G_i=g] \right) \\
+& + \sum_{g \,\in\, \mathcal{G} \setminus \{\text{Native}\}} \theta_{Og} \left( \text{OwnAccountWorker}_{it} \times \mathbf{1}[G_i=g] \right) \\
+& + \mathbf{Z}'_{it}\boldsymbol{\zeta} + u_{it},
+\end{aligned}
+$${#eq-owner-inc}
+
+where the three mutually exclusive ownership indicators are
+
+$$
+\begin{aligned}
+\text{SmallEmployer}_{it} &= \mathbb{1}\left[ s_{it} = E,\ \text{Size}_{it} < 20 \right], \\
+\text{LargeEmployer}_{it} &= \mathbb{1}\left[ s_{it} = E,\ \text{Size}_{it} \geq 20 \right], \\
+\text{OwnAccountWorker}_{it} &= \mathbb{1}\left[ s_{it} = O,\ \text{Size}_{it} < 20 \right],
+\end{aligned}
+$$
+
+with $s_{it}$ the status defined in @sec-data-outcomes, $\text{Size}_{it}$ the number of people at the individual's workplace and employees as the reference category. The term $\mathbf{1}[G_i = g]$ equals one if individual $i$ belongs to migrant group $g$, with the native-born as the reference group, and $\delta_t$, $\mu_{kt}$ and $\nu_{rt}$ are year, industry-by-year and state-by-year fixed effects. The controls $\mathbf{Z}_{it}$ contain age and its square, sex, education, occupational tenure, marital status, remoteness, the SEIFA decile and the workplace types, so small employers are compared with employees in small workplaces and large employers with employees in large workplaces. All regressors are measured at $t$, with workplace type, industry and occupational tenure taken from $t-1$ when missing at $t$. The volatility and downside-risk specifications also control for the individual's prior income decile, the within-wave decile of average income over waves $t-5$ to $t-2$, since volatility is concentrated at the bottom of the income distribution [@tin_lifecycle_2023] and a low-earning group could otherwise appear more volatile solely because of where it sits. The decile is excluded from the income-level specification, where it would absorb the gap we aim to measure. We estimate the models by OLS without survey weights and cluster standard errors by individual and by industry-year.
+
+The coefficients $\theta_S$, $\theta_L$ and $\theta_O$ compare each type of owner with comparable employees among the native-born, and $\gamma_g$ compares migrant group $g$ with the native-born among employees. For small employers from group $g$, the sum $\theta_S + \theta_{Sg}$ compares them with employees of the same origin, while the interaction $\theta_{Sg}$, which we term the ownership premium gap, measures whether this difference departs from the native-born difference. The same holds for large employers and own-account workers. The distinction matters since some migrant groups already earn less than the native-born as employees, so a disadvantage can be attributed to ownership itself only if it exceeds this existing gap.
+
+The power-reversal hypothesis makes three predictions. First, low-English small employers should have a negative premium gap in income, $\theta_{Sg} < 0$, reflecting lower returns to ownership. Second, they should have positive premium gaps in volatility and downside risk, reflecting greater exposure to risk. Third, these gaps should be concentrated among small employers and close to zero for MES owners. We also test jointly whether all origin by owner-type interactions are zero.
+
+Three features of the data matter for interpretation. First, low-English owners are few, so alongside each premium gap we report its minimum detectable effect, $\text{MDE} = 2.8 \times \widehat{\text{SE}}$, the smallest true difference that a two-sided 5 per cent test detects with 80 per cent power [@bloom_minimum_1995]. An insignificant gap with a large MDE is uninformative, not evidence of no difference. Owner by origin cells with fewer than five individuals are excluded, which removes the single low-English large employer. Second, owners who are not re-interviewed, and owners whose business closes between $t-1$ and $t$, drop out of the owner comparison, so neither sample measures the income consequences of leaving ownership. Third, workplace size is partly an outcome of business success, so we treat the comparison of small and large employers as heterogeneity, not as an effect of size. The self-employed also under-report income [@hurst_are_2014], which is a further reason to examine income risk alongside its level.
+
+## Entry into Business Ownership {#sec-block3}
+
+The wage and income comparisons take ownership as given, so we finally ask who becomes an owner. A high rate of ownership among migrants is not in itself evidence of entrepreneurial opportunity, since people may also enter ownership when their alternatives in paid employment are poor. Motives for entry are rarely observed, so we follow @fairlie_2020 and classify entry by labour market position before entry, using the transition sample of @sec-data-samples, in which each person-pair is one year at risk of entry [@evans_determinants_1989; @fairlie_absence_1999]. The model is specified as follows,
+
+$$
+\begin{aligned}
+\Pr(\text{Entry}_{it} = 1) = \Lambda\Big( & \delta_t + \mu_{kt} + \nu_{rt} + \sum_{g \in \mathcal{G} \setminus \{\text{Native}\}} \phi_g \mathbf{1}[G_i = g] \\
+& + \phi_1 \text{Unemployed}_{i,t-1} + \phi_2 \text{NotInLabourForce}_{i,t-1} \\
+& + \phi_3 \text{LowWage}_{i,t-1} + \phi_4 \text{LiquidityConstraint}_{i,t-1} \\
+& + \mathbf{X}'_{i,t-1} \boldsymbol{\kappa} \Big),
+\end{aligned}
+$$ {#eq-transition}
+
+where $\Lambda$ is the logistic function and the indicators are defined in @sec-data-outcomes. The omitted category is an employee who is not low-paid at $t-1$, so each labour market coefficient compares a weaker position with stable, reasonably paid employment. The terms $\delta_t$, $\mu_{kt}$ and $\nu_{rt}$ are year, industry-by-year and state-by-year fixed effects, where industry $k$ is that of the individual's job at $t-1$ or, for those not employed, their most recent job. The controls $\mathbf{X}_{i,t-1}$ contain age and its square, sex, years in Australia with an indicator for missing arrival year, marital status, home ownership, the SEIFA decile, remoteness and an indicator for a missing liquidity measure. We add the regressors in four steps (origin alone, then labour market position and liquidity alone, then both, then both with education and employer tenure at $t-1$), so that the change in the origin coefficients $\phi_g$ shows how far origin differences in entry reflect labour market position and human capital. Standard errors are clustered by individual.
+
+The logit is the standard model of transitions into self-employment [@evans_determinants_1989; @fairlie_absence_1999] and suits an outcome that occurs in about 2 per cent of person-years. Coefficients are log-odds, which we report as odds ratios $\exp(\beta)$. Each fixed-effect cell contains many individuals, so the logit does not suffer from the incidental parameters problem [@neyman_consistent_1948]. As a robustness check, we re-estimate every specification as a linear probability model on the same person-pairs. Its coefficients are percentage-point changes in the probability of entry [@angrist_mostly_2009], and its interactions are measured on the probability scale, whereas a logit interaction is a ratio of odds ratios whose implication for probabilities depends on each group's baseline entry rate [@ai_interaction_2003]. Baseline rates differ between low-English migrants and the native-born, so comparing the two models shows whether a larger push is larger in relative terms, in absolute terms or both.
+
+Necessity entry implies that $\phi_1$ and $\phi_3$ are positive, and the framework implies that this push is strongest for migrants with limited English. To test whether the push differs by origin, we add interactions of the origin groups with unemployment and low wages to the final step,
+
+$$
+\begin{aligned}
+\Pr(\text{Entry}_{it} = 1) = \Lambda\Big( & \cdots + \sum_{g \in \mathcal{G} \setminus \{\text{Native}\}} \theta^U_g \left( \text{Unemployed}_{i,t-1} \times \mathbf{1}[G_i = g] \right) \\
+& + \sum_{g \in \mathcal{G} \setminus \{\text{Native}\}} \theta^W_g \left( \text{LowWage}_{i,t-1} \times \mathbf{1}[G_i = g] \right) \Big),
+\end{aligned}
+$$ {#eq-transition-het}
+
+where the omitted terms are those of @eq-transition. Unemployment multiplies the odds of entry by $\exp(\phi_1)$ for the native-born and by $\exp(\phi_1 + \theta^U_g)$ for group $g$, so $\exp(\theta^U_g)$, the ratio of the two odds ratios, measures how many times stronger the push from unemployment is for group $g$ than for the native-born. The push from low wages is interpreted in the same way, with $\theta^W_g$ in place of $\theta^U_g$. Necessity entry predicts $\theta^U_g > 0$ and $\theta^W_g > 0$, largest for low-English migrants.
+
+The estimates rely on a no-anticipation assumption, under which labour market status in the year before entry is not itself a response to a decision to start a business. The assumption would fail if people left paid work to prepare a business they had already decided to start. We assess this by re-estimating @eq-transition-het with labour market status measured at $t-1$, at $t-2$ and at both, all on individuals observed at $t-2$, so that differences reflect timing and not sample composition.
+
+The push coefficients could also reflect stable traits, such as ability, appetite for risk or family wealth, that affect both how often someone is unemployed or low-paid and how likely they are to start a business. Individual fixed effects would absorb the origin groups, which do not change over time, and a fixed-effects logit [@chamberlain_analysis_1980] would discard the 85 per cent of individuals who never enter. We therefore add each individual's mean of the time-varying regressors (unemployment, low wages, non-participation, liquidity, home ownership and the SEIFA decile), the correlated random effects approach of @mundlak_pooling_1978 and @wooldridge_econometric_2010. The coefficients on the time-varying regressors then compare an individual with themselves at other times, as fixed effects would, while the origin groups remain identified. This distinguishes a push that occurs when a person becomes unemployed or low-paid from one that reflects which kinds of people tend to be unemployed or low-paid. As a second check, we estimate the heterogeneity specification as a linear probability model with individual fixed effects, which keeps individuals who never enter and identifies the origin interactions from changes in labour market status over time. Both within-person approaches require strict exogeneity, so past entry must not affect later unemployment or wages. This is doubtful in a transition sample, since an owner who exits rejoins the sample with a labour market history shaped by their business. We therefore treat the within-person estimates as a check on the role of stable traits, not as a preferred specification.

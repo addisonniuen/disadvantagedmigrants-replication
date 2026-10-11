@@ -1,0 +1,2603 @@
+# Appendix {#sec-appendix}
+
+```{=typst}
+#show figure.where(kind: "quarto-float-tbl"): set block(breakable: true)
+#show figure.caption: it => block(sticky: true, it)
+```
+
+```{r}
+#| label: setup
+#| include: false
+library(tinytable)
+library(dplyr)
+# tinytable is the only backend that renders natively to BOTH pdf and docx.
+options(modelsummary_factory_default = "tinytable")
+options(modelsummary_format_numeric_latex = "plain")
+RENDER_MODE <- TRUE
+
+# Replication package root (no machine-specific paths)
+parent_dir <- rprojroot::find_root(rprojroot::has_file("project/code/01_setup.R"))
+
+withr::with_dir(parent_dir, {
+  source(file.path(parent_dir, "project", "code", "01_setup.R"))
+  withr::with_dir(parent_dir, {
+    source(file.path(parent_dir, "project", "code", "02_datacleaning.R"))
+  })
+  withr::with_dir(parent_dir, {
+    source(file.path(parent_dir, "project", "code", "03_featureengineering.R"))
+  })
+  withr::with_dir(parent_dir, {
+    source(file.path(parent_dir, "project", "code", "05_analysisblock1.R"))
+  })
+  withr::with_dir(parent_dir, {
+    source(file.path(parent_dir, "project", "code", "06_analysisblock2.R"))
+  })
+  withr::with_dir(parent_dir, {
+    source(file.path(parent_dir, "project", "code", "07_analysisblock3.R"))
+  })
+})
+```
+
+```{r}
+#| label: setup-appendix-figures
+#| include: false
+
+# Figure style, number formatting and table helpers (thesis_format.R)
+source("thesis_format.R", encoding = "UTF-8")
+```
+
+## Data {#sec-appendix-data}
+
+This section reports the estimation samples and the descriptive tables referred to in @sec-data.
+
+```{r}
+#| label: tbl-sample-flow
+#| tbl-cap: "Estimation samples."
+#| echo: false
+
+sample_row <- function(analysis, sample, unit, waves, m, data) {
+  d <- data[fixest::obs(m), ]
+  tibble::tibble(
+    Analysis = analysis,
+    Sample = sample,
+    Unit = unit,
+    Waves = waves,
+    Observations = format(nobs(m), big.mark = ","),
+    Individuals = format(dplyr::n_distinct(d$xwaveid), big.mark = ","),
+    `Low-English individuals` = format(
+      dplyr::n_distinct(d$xwaveid[d$origin_group %in% "mnes_loweng"]), big.mark = ","
+    )
+  )
+}
+
+dplyr::bind_rows(
+  sample_row("Employee wages", "Employees", "Person-year", "1 to 21", regression1_v1a, data_regression_1),
+  sample_row("Owner income and risk", "Restricted pairs (same status)", "Person-pair", "1 to 21", regression2_income, data_regression_2_pairs),
+  sample_row("Owner income and risk", "Unrestricted pairs", "Person-pair", "1 to 21", regression2_income_unrestricted, data_regression_2_unrestricted),
+  sample_row("Entry into ownership", "Non-owners at t−1", "Person-pair", "1 to 24", regression3_v4a, data_regression_3)
+) |>
+  tinytable::tt() |>
+  tinytable::theme_empty() |>
+  tinytable::style_tt(i = 0, line = "tb") |>
+  tinytable::style_tt(i = 4, line = "b") |>
+  tinytable::style_tt(j = 1:4, align = "l") |>
+  tinytable::style_tt(j = 5:7, align = "c")
+```
+
+::: {.notes}
+*Notes:* This table reports the estimation sample of each analysis. Observations and individuals are those of the main specification, namely the Type 0 column of @tbl-b1-main for employee wages, the income regressions of @tbl-b2-main for owner income and risk, and the *Adding human capital* column of @tbl-b3-main for entry into ownership. A person-pair is an individual observed in two consecutive waves, $t-1$ and $t$. Unrestricted pairs classify everyone who is an employee, owner with employees or own-account worker at $t$ by their status at $t$; restricted pairs also require the same status at $t-1$. Low-English individuals are MNES migrants with low English proficiency.
+:::
+
+```{r}
+#| label: tbl-firmtype
+#| tbl-cap: "Distribution of firm structures observed in the employee sample."
+#| echo: false
+
+fmt_n <- function(x) format(x, big.mark = ",", trim = TRUE)
+fmt_num <- function(x, d = 2) {
+  formatC(x, format = "f", digits = d, big.mark = ",")
+}
+firm_base <- employee_sample |> filter(wave <= 21L)
+
+tibble::tibble(
+  Category = c(
+    "Small single-site",
+    "Chain-like",
+    "Small-site chain",
+    "None of the three",
+    "Firm structure missing"
+  ),
+  n = c(
+    sum(firm_base$small_single_site == 1L, na.rm = TRUE),
+    sum(firm_base$chain_like == 1L, na.rm = TRUE),
+    sum(firm_base$small_site_chain == 1L, na.rm = TRUE),
+    sum(
+      coalesce(firm_base$small_single_site, 0L) +
+        coalesce(firm_base$chain_like, 0L) +
+        coalesce(firm_base$small_site_chain, 0L) ==
+        0L &
+        !is.na(firm_base$small_single_site)
+    ),
+    sum(is.na(firm_base$small_single_site))
+  )
+) |>
+  mutate(
+    `Person-years` = fmt_n(n),
+    `Share (%)` = fmt_num(100 * n / nrow(firm_base), 1)
+  ) |>
+  select(-n) |>
+  tt(
+    width = c(0.40, 0.30, 0.30)
+  ) |>
+  style_tt(j = 2:3, align = "r") |>
+  style_tt(i = 0, bold = TRUE, align = "c") |>
+  style_tt(i = 0, line = "b", line_width = 0.05)
+```
+
+::: {.notes}
+*Notes:* This table reports the distribution of workplace types (@sec-data-workplace) across employee person-years in HILDA waves 1 to 21. The categories are mutually exclusive. Small single-site and small-site chain workplaces have fewer than 20 people at the workplace and an employer with one or several locations respectively; chain-like workplaces have 20 or more people and an employer with at least 500 employees nationally. *None of the three* is the reference category of other large workplaces, and *Firm structure missing* means that workplace size or the number of locations is unanswered. The base is every employee person-year before observations with missing wages or controls are dropped, so the total exceeds the wage sample in @tbl-sample-flow.
+:::
+
+```{r}
+#| label: tbl-share-dist
+#| tbl-cap: "Distribution of the leave-one-out ownership exposure shares across industry-year (waves 1-21)."
+#| echo: false
+SHARE_SUFFIX <- "1d_type0"
+fmt_n <- function(x) format(x, big.mark = ",", trim = TRUE)
+fmt_num <- function(x, d = 2) {
+  formatC(x, format = "f", digits = d, big.mark = ",")
+}
+sv <- function(stem) paste0(stem, "_", SHARE_SUFFIX)
+
+cell_shares <- panel_final |>
+  filter(!is.na(industry_19categories_jbmi61), !wave %in% 22:24) |>
+  summarise(
+    across(
+      all_of(c(sv("loo_mes"), sv("loo_mnes_higheng"), sv("loo_mnes_loweng"))),
+      ~ first(.x[!is.na(.x)])
+    ),
+    n_owners = first(.data[[sv("n_owners")]]),
+    .by = c(industry_19categories_jbmi61, wave)
+  )
+
+owner_group_map <- c(
+  "MES" = "mes",
+  "MNES (high English proficiency)" = "mnes_higheng",
+  "MNES (low English proficiency)" = "mnes_loweng"
+)
+
+owner_counts <- purrr::imap_dfr(owner_group_map, function(grp, lab) {
+  owners_grp <- panel_final |>
+    filter(
+      is_owner == 1L,
+      origin_group == grp,
+      !is.na(industry_19categories_jbmi61),
+      !wave %in% 22:24
+    )
+  tibble::tibble(
+    Share = lab,
+    Owners = n_distinct(owners_grp$xwaveid)
+  )
+})
+
+share_map <- c(
+  "MES" = sv("loo_mes"),
+  "MNES (high English proficiency)" = sv("loo_mnes_higheng"),
+  "MNES (low English proficiency)" = sv("loo_mnes_loweng")
+)
+
+purrr::imap_dfr(share_map, function(v, lab) {
+  x <- cell_shares[[v]]
+  x <- x[!is.na(x)]
+  tibble::tibble(
+    Share = lab,
+    `Industry-year (N)` = fmt_n(length(x)),
+    `Zero (%)` = fmt_num(100 * mean(x == 0), 3),
+    Mean = fmt_num(mean(x), 3),
+    SD = fmt_num(sd(x), 3),
+    Median = fmt_num(median(x), 3),
+    Max = fmt_num(max(x), 3)
+  )
+}) |>
+  left_join(owner_counts, by = "Share") |>
+  relocate(Share, Owners, `Industry-year (N)`) |>
+  mutate(Owners = fmt_n(Owners)) |>
+  tt(
+    width = c(0.30, 0.10, 0.12, 0.10, 0.10, 0.09, 0.09, 0.10)
+  ) |>
+  style_tt(j = 1, align = "l") |>
+  style_tt(j = 2:8, align = "r") |>
+  style_tt(i = 0, align = "c") |>
+  style_tt(i = 0, line = "b", line_width = 0.05)
+```
+
+::: {.notes}
+*Notes:* This table reports the distribution of the leave-one-out owner shares of @eq-loo-shares, without decay (Type 0), across industry-year cells in HILDA waves 1 to 21. *Owners* is the number of distinct owners in each origin group. *Industry-year (N)* counts the cells with at least one owner; 27 of the 399 possible cells have no owners and are excluded because the share is undefined. *Zero (%)* is the percentage of cells with no owner from the group.
+:::
+
+```{r}
+#| label: tbl-owner-industry
+#| tbl-cap: "Industry composition of business owners (%) by origin and English proficiency group."
+#| echo: false
+owner_base <- panel_final |>
+  filter(
+    is_owner == 1L,
+    !is.na(industry_19categories_jbmi61),
+    !is.na(origin_group)
+  )
+
+owner_counts <- owner_base |>
+  summarise(n_obs = n(), n_persons = n_distinct(xwaveid), .by = origin_group) |>
+  pivot_longer(c(n_obs, n_persons), names_to = "Industry", values_to = "v") |>
+  mutate(
+    Industry = if_else(Industry == "n_obs", "Person-years", "Persons"),
+    v = format(v, big.mark = ",", trim = TRUE)
+  ) |>
+  pivot_wider(names_from = origin_group, values_from = v)
+
+owner_base |>
+  mutate(
+    industry_19categories_jbmi61 = stringr::str_replace(
+      as.character(industry_19categories_jbmi61),
+      "^\\w",
+      toupper
+    )
+  ) |>
+  summarise(n = n(), .by = c(industry_19categories_jbmi61, origin_group)) |>
+  mutate(pct = 100 * n / sum(n), .by = origin_group) |>
+  select(-n) |>
+  pivot_wider(names_from = origin_group, values_from = pct, values_fill = 0) |>
+  rename(Industry = industry_19categories_jbmi61) |>
+  arrange(desc(native)) |>
+  mutate(across(-Industry, ~ sprintf("%.2f", .x))) |>
+  bind_rows(owner_counts) |>
+  rename(
+    `Native-born` = native,
+    MES = mes,
+    `High English` = mnes_higheng,
+    `Low English` = mnes_loweng
+  ) |>
+  relocate(Industry, `Native-born`, MES, `High English`, `Low English`) |>
+  tt(width = c(0.30, 0.18, 0.12, 0.20, 0.20)) |>
+  group_tt(j = list("MNES" = 4:5), bold = FALSE) |>
+  style_tt(j = 2:5, align = "c") |>
+  style_tt(i = 0, j = 1, bold = FALSE, align = "l") |>
+  style_tt(i = 0, j = 2:5, bold = FALSE, align = "c") |>
+  style_tt(i = 20:21, italic = FALSE, bold = FALSE) |>
+  style_tt(i = 19, line = "b", line_width = 0.05) |>
+  style_tt(i = 0, line = "b", line_width = 0.05)
+```
+
+::: {.notes}
+*Notes:* This table reports the percentage of business owners (employers and own-account workers) in each origin group who work in each industry, pooled over HILDA waves 1 to 24. Industries are the 19 ANZSIC divisions, and each column sums to 100. The bottom rows give owner person-years and distinct owners; these are slightly below the counts in @tbl-owner-desc because owners without a reported industry are excluded. *High English* and *Low English* are MNES migrants with high and low English proficiency.
+:::
+
+```{r}
+#| label: tbl-industry-composition
+#| tbl-cap: "Industry composition by worker type."
+#| echo: false
+ind_base <- panel_final |>
+  filter(!is.na(industry_19categories_jbmi61)) |>
+  mutate(
+    industry_19categories_jbmi61 = stringr::str_replace(
+      as.character(industry_19categories_jbmi61),
+      "^\\w",
+      toupper
+    ),
+    Group = case_when(
+      owner_with_employees == 1L ~ "Self-employed worker with employees",
+      own_account_worker == 1L ~ "Own-account worker",
+      is_employee == 1L ~ "Employees",
+      .default = NA_character_
+    )
+  ) |>
+  filter(!is.na(Group))
+
+ind_counts <- ind_base |>
+  summarise(n_obs = n(), n_persons = n_distinct(xwaveid), .by = Group) |>
+  pivot_longer(c(n_obs, n_persons), names_to = "Industry", values_to = "v") |>
+  mutate(
+    Industry = if_else(Industry == "n_obs", "Person-years", "Persons"),
+    v = format(v, big.mark = ",", trim = TRUE)
+  ) |>
+  pivot_wider(names_from = Group, values_from = v)
+
+ind_base |>
+  summarise(n = n(), .by = c(industry_19categories_jbmi61, Group)) |>
+  mutate(pct = 100 * n / sum(n), .by = Group) |>
+  select(-n) |>
+  pivot_wider(names_from = Group, values_from = pct, values_fill = 0) |>
+  rename(Industry = industry_19categories_jbmi61) |>
+  arrange(desc(`Self-employed worker with employees`)) |>
+  mutate(across(-Industry, ~ sprintf("%.1f", .x))) |>
+  bind_rows(ind_counts) |>
+  relocate(
+    Industry,
+    Employees,
+    `Self-employed worker with employees`,
+    `Own-account worker`
+  ) |>
+  tt(width = c(0.32, 0.13, 0.35, 0.20)) |>
+  style_tt(j = 2:4, align = "c") |>
+  style_tt(i = 0, j = 1, bold = FALSE, align = "l") |>
+  style_tt(i = 0, j = 2:4, bold = FALSE, align = "r") |>
+  style_tt(i = 20:21, italic = FALSE, bold = FALSE) |>
+  style_tt(i = 19, line = "b", line_width = 0.1) |>
+  style_tt(i = 0, line = "b", line_width = 0.05)
+```
+
+::: {.notes}
+*Notes:* This table reports the percentage of employees, employers (self-employed with employees) and own-account workers (self-employed without employees) who work in each industry, pooled over HILDA waves 1 to 24. Industries are the 19 ANZSIC divisions, ordered by the share of employers, and each column sums to 100. The bottom rows give person-years and distinct individuals in each group.
+:::
+
+```{r}
+#| label: tbl-panel
+#| tbl-cap: "Panel persistence of all respondents by origin group."
+#| echo: false
+
+# Waves in which each person is interviewed, for every respondent (owners and
+# non-owners), since panel persistence affects every sample that needs
+# consecutive waves
+panel_final |>
+  filter(!is.na(origin_group), !is.na(lf_status_detail_esdtl)) |>
+  summarise(
+    n_waves = dplyr::n_distinct(wave),
+    adjacent = max(as.integer(wave)) - min(as.integer(wave)) + 1L == dplyr::n_distinct(wave),
+    .by = c(xwaveid, origin_group)
+  ) |>
+  summarise(
+    Persons = n(),
+    `Mean waves` = mean(n_waves),
+    `Median waves` = median(n_waves),
+    `1 wave (%)` = 100 * mean(n_waves == 1),
+    `10+ waves (%)` = 100 * mean(n_waves >= 10),
+    `Adjacent (%)` = 100 * mean(adjacent),
+    `All waves (%)` = 100 * mean(n_waves == 24),
+    .by = origin_group
+  ) |>
+  rename(Group = origin_group) |>
+  mutate(
+    Group = recode_values(
+      Group,
+      "native" ~ "Native-born",
+      "mes" ~ "MES",
+      "mnes_higheng" ~ "MNES (high English)",
+      "mnes_loweng" ~ "MNES (low English)"
+    )
+  ) |>
+  arrange(match(
+    Group,
+    c("Native-born", "MES", "MNES (high English)", "MNES (low English)")
+  )) |>
+  tt(
+    width = c(0.19, 0.10, 0.12, 0.13, 0.10, 0.12, 0.12, 0.12)
+  ) |>
+  format_tt(j = 2, digits = 0, num_fmt = "decimal", num_mark_big = ",") |>
+  format_tt(j = 3:4, digits = 2, num_fmt = "decimal") |>
+  format_tt(j = 5:8, digits = 1, num_fmt = "decimal") |>
+  style_tt(j = 2:8, align = "r") |>
+  style_tt(j = 1, bold = FALSE, align = "l") |>
+  style_tt(i = 0, line = "b", line_width = 0.05)
+```
+
+::: {.notes}
+*Notes:* This table reports the panel persistence of every respondent, owners and non-owners, by origin group, counting the waves (out of 24) in which each person is interviewed. *1 wave (%)* and *10+ waves (%)* are the percentages interviewed in only one wave and in ten or more waves, *Adjacent (%)* the percentage whose interviews form one unbroken run of consecutive waves and *All waves (%)* the percentage interviewed in all 24 waves. Samples that need consecutive waves, such as the owner income and entry samples, lose more people from groups with less persistent participation.
+:::
+
+```{r}
+#| label: tbl-hilda-vars
+#| tbl-cap: "HILDA variables used in the analysis."
+#| echo: false
+
+hilda_vars <- tibble::tribble(
+  ~Variable, ~Description, ~`Used for`,
+  "Survey weights", "", "",
+  "HHWTRP", "Responding-person cross-sectional weight", "Owner shares (main measure)",
+  "LNWTRP", "Responding-person longitudinal weight", "Owner shares (sensitivity check)",
+  "Origin and English proficiency", "", "",
+  "ANBCOB, ANCOB", "Country of birth (brief; SACC code)", "Origin groups",
+  "HGEAB, ANEAB", "How well speaks English (wave 1; later waves)", "English proficiency",
+  "SKTAREA", "Reading ability relative to an average Australian (waves 12, 16, 20, 24)", "English proficiency",
+  "ANYOA", "Year first came to Australia to live", "Years in Australia; decay weights",
+  "Employment and workplace", "", "",
+  "ESEMPDT", "Employment status in main job", "Employee, employer, own-account worker",
+  "JBMMPL, JBMMPLR, JBMMPLY", "Description of employer or business", "Employment status",
+  "ESDTL", "Labour force status", "Unemployed, not in the labour force",
+  "JBMWPSZ, JBMWPS", "Number of people at the workplace (waves 1 to 4; 5 to 21)", "Workplace types; small and large employers",
+  "JBMMWP", "Employer operates from more than one location", "Workplace types",
+  "JBMEMSZ", "Number of people employed by the employer in Australia", "Chain-like workplaces",
+  "JBMI61, JBMI62", "Industry of main job (19 ANZSIC divisions; two-digit)", "Owner shares; industry-year fixed effects",
+  "JBMO61", "Occupation of main job (one-digit ANZSCO)", "Wage controls",
+  "JBCASAB", "Casual or permanent employment", "Wage controls",
+  "JBOCCT, JBEMPT", "Tenure in occupation; tenure with employer", "Controls",
+  "JBMTUEA", "Trade union or employee association member", "Wage controls",
+  "Income", "", "",
+  "WSCMEI, JBMHRUC", "Weekly gross wages and usual weekly hours in main job", "Hourly wage",
+  "WSFEI", "Financial-year gross wages and salary", "Labour and business income",
+  "BIFIP, BIFIN", "Financial-year business income (positive; negative)", "Labour and business income",
+  "Financial stress (self-completion questionnaire)", "", "",
+  "FIPRBEG, FIPRBMR, FIPRBFH", "Could not pay bills, or mortgage or rent, on time; asked family or friends for help", "Cash-flow problem",
+  "FIPRBWM, FIPRBUH, FIPRBPS, FIPRBWO", "Went without meals; unable to heat home; pawned or sold something; asked a welfare organisation for help", "Hardship",
+  "Demographics and location", "", "",
+  "HGAGE, HGSEX", "Age; sex", "Controls",
+  "EDHIGH1", "Highest education level achieved", "Controls",
+  "MRCURR", "Current marital status", "Controls",
+  "HSTENR", "Housing tenure", "Home ownership",
+  "HHSTATE", "State of residence", "State-year fixed effects",
+  "HHS3RA, HHS3ADD", "Remoteness area; SEIFA decile of disadvantage", "Controls"
+)
+headers <- which(hilda_vars$Description == "")
+
+tinytable::tt(hilda_vars, width = c(0.27, 0.45, 0.28)) |>
+  tinytable::theme_empty() |>
+  tinytable::style_tt(i = 0, line = "tb") |>
+  tinytable::style_tt(i = headers, italic = TRUE) |>
+  tinytable::style_tt(i = nrow(hilda_vars), line = "b") |>
+  tinytable::style_tt(j = 1:3, align = "l")
+```
+
+::: {.notes}
+*Notes:* This table lists the HILDA variables used in the analysis, by group. Variable names omit the one-letter wave prefix (for example, HHWTRP is AHHWTRP in wave 1). Workplace size, the number of employer locations and the employer's national size are asked only in waves 1 to 21. Variable definitions are from the HILDA Online Data Dictionary.
+:::
+
+## Employee Wages {#sec-appendix-b1}
+
+This section reports the distribution of the owner shares, the full estimates behind @tbl-b1-main and the robustness and sensitivity checks discussed in @sec-results-block1. It also reports two further robustness checks, inference that allows for correlation within industries (@sec-appendix-wild), and owner shares built with the longitudinal survey weight (@sec-appendix-lnw).
+
+```{r}
+#| label: tbl-loo-shares-b1
+#| tbl-cap: "Distribution of the leave-one-out owner shares across employees in the wage sample."
+#| echo: false
+summary_data <- data_regression_1 |>
+  select(
+    loo_mes_1d_type0,
+    loo_mnes_higheng_1d_type0,
+    loo_mnes_loweng_1d_type0,
+    loo_mes_1d_type1,
+    loo_mnes_higheng_1d_type1,
+    loo_mnes_loweng_1d_type1,
+    loo_mes_1d_type2,
+    loo_mnes_higheng_1d_type2,
+    loo_mnes_loweng_1d_type2
+  ) |>
+  tidyr::pivot_longer(everything(), names_to = "var", values_to = "v") |>
+  filter(!is.na(v)) |>
+  tidyr::separate(var, into = c("share_type", "decay_type"), sep = "_1d_") |>
+  summarise(
+    Mean = mean(v),
+    `Std. Dev.` = sd(v),
+    `Q1` = quantile(v, 0.25),
+    Median = median(v),
+    `Q3` = quantile(v, 0.75),
+    Max = max(v),
+    `% Zero` = 100 * mean(v == 0),
+    .by = c(share_type, decay_type)
+  ) |>
+  mutate(
+    share_type = recode_values(
+      share_type,
+      "loo_mes" ~ "MES owner density",
+      "loo_mnes_higheng" ~ "MNES high English owner density",
+      "loo_mnes_loweng" ~ "MNES low English owner density"
+    ),
+    decay_type = recode_values(
+      decay_type,
+      "type0" ~ "Type 0 (no weighting)",
+      "type1" ~ "Type 1 (pooled - same λ applied to all migrants)",
+      "type2" ~ "Type 2 (λ is split by migrant origin group)"
+    )
+  ) |>
+  arrange(
+    factor(
+      decay_type,
+      levels = c(
+        "Type 0 (no weighting)",
+        "Type 1 (pooled - same λ applied to all migrants)",
+        "Type 2 (λ is split by migrant origin group)"
+      )
+    ),
+    share_type
+  )
+
+bind_rows(
+  tibble(
+    Density = "Type 0 (no weighting)",
+    Mean = NA_real_,
+    `Std. Dev.` = NA_real_,
+    `Q1` = NA_real_,
+    Median = NA_real_,
+    `Q3` = NA_real_,
+    Max = NA_real_,
+    `% Zero` = NA_real_
+  ),
+  summary_data |>
+    filter(decay_type == "Type 0 (no weighting)") |>
+    select(
+      Density = share_type,
+      Mean,
+      `Std. Dev.`,
+      `Q1`,
+      Median,
+      `Q3`,
+      Max,
+      `% Zero`
+    ),
+  tibble(
+    Density = "Type 1 (pooled - same λ applied to all migrants)",
+    Mean = NA_real_,
+    `Std. Dev.` = NA_real_,
+    `Q1` = NA_real_,
+    Median = NA_real_,
+    `Q3` = NA_real_,
+    Max = NA_real_,
+    `% Zero` = NA_real_
+  ),
+  summary_data |>
+    filter(decay_type == "Type 1 (pooled - same λ applied to all migrants)") |>
+    select(
+      Density = share_type,
+      Mean,
+      `Std. Dev.`,
+      `Q1`,
+      Median,
+      `Q3`,
+      Max,
+      `% Zero`
+    ),
+  tibble(
+    Density = "Type 2 (λ is split by migrant origin group)",
+    Mean = NA_real_,
+    `Std. Dev.` = NA_real_,
+    `Q1` = NA_real_,
+    Median = NA_real_,
+    `Q3` = NA_real_,
+    Max = NA_real_,
+    `% Zero` = NA_real_
+  ),
+  summary_data |>
+    filter(decay_type == "Type 2 (λ is split by migrant origin group)") |>
+    select(
+      Density = share_type,
+      Mean,
+      `Std. Dev.`,
+      `Q1`,
+      Median,
+      `Q3`,
+      Max,
+      `% Zero`
+    )
+) |>
+  mutate(across(2:8, ~ ifelse(is.na(.), NA, sprintf(if (cur_column() == "% Zero") "%.1f" else "%.3f", .)))) |>
+  mutate(across(2:8, as.character)) |>
+  mutate(across(2:8, ~ replace_na(., ""))) |>
+  tt() |>
+  style_tt(i = c(1, 5, 9), italic = TRUE) |>
+  style_tt(i = 0, line = "tb", bold = FALSE)
+```
+
+::: {.notes}
+*Notes:* This table reports the distribution of the leave-one-out owner shares of @eq-loo-shares across employee person-years in the wage sample of @tbl-b1-main, so each employee contributes the share of their own industry and year. The shares run from 0 to 1. Q1 and Q3 are the 25th and 75th percentiles, and *% Zero* is the percentage of person-years whose share is exactly zero. Type 0 applies no decay, Type 1 a pooled decay rate ($\lambda = `r lambda_mean`$) and Type 2 origin-specific rates ($\lambda_{\text{MES}} = `r lambda_mes`$ and $\lambda_{\text{MNES}} = `r lambda_other`$).
+:::
+
+```{r}
+#| label: tbl-b1-robustness
+#| tbl-cap: "Log hourly wages under alternative small-firm size thresholds."
+#| echo: false
+b1_robust_main <- list(
+  "10 employees" = regression1_v1a_check_wpsize10,
+  "20 employees (baseline)" = regression1_v1a,
+  "50 employees" = regression1_v1a_check_wpsize50
+)
+
+b1_robust_layout <- b1_full_layout(c(
+  "Firm structure" = 3,
+  "Interactions of firm structure with owner density" = 3
+))
+
+coef_b1_robust_main <- c(
+  # Firm structure
+  "small_single_site_10" = "Small single-site",
+  "small_single_site" = "Small single-site",
+  "small_single_site_50" = "Small single-site",
+  "chain_like_10" = "Chain-like",
+  "chain_like" = "Chain-like",
+  "chain_like_50" = "Chain-like",
+  "small_site_chain_10" = "Small-site chain",
+  "small_site_chain" = "Small-site chain",
+  "small_site_chain_50" = "Small-site chain",
+  # Interactions
+  "small_single_site_10:loo_mes_1d_type0" = "Small single-site x MES owner density",
+  "small_single_site:loo_mes_1d_type0" = "Small single-site x MES owner density",
+  "small_single_site_50:loo_mes_1d_type0" = "Small single-site x MES owner density",
+  "small_single_site_10:loo_mnes_higheng_1d_type0" = "Small single-site x MNES high-English owner density",
+  "small_single_site:loo_mnes_higheng_1d_type0" = "Small single-site x MNES high-English owner density",
+  "small_single_site_50:loo_mnes_higheng_1d_type0" = "Small single-site x MNES high-English owner density",
+  "small_single_site_10:loo_mnes_loweng_1d_type0" = "Small single-site x MNES low-English owner density",
+  "small_single_site:loo_mnes_loweng_1d_type0" = "Small single-site x MNES low-English owner density",
+  "small_single_site_50:loo_mnes_loweng_1d_type0" = "Small single-site x MNES low-English owner density"
+)
+
+modelsummary::modelsummary(
+  b1_robust_main,
+  coef_map = c(coef_b1_robust_main, b1_controls),
+  gof_map = gof_comma(tribble(
+    ~raw            , ~clean               , ~fmt ,
+    "nobs"          , "Observations (person-years)"       ,    0 ,
+    "r.squared"     , "R-Squared"          ,    3 ,
+    "adj.r.squared" , "Adjusted R-Squared" ,    3
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = tibble::tribble(
+    ~term                                          , ~`10 employees` , ~`20 employees (baseline)` , ~`50 employees` ,
+    "Individuals"                                  , fmt_int(n_individuals_model(regression1_v1a_check_wpsize10)), fmt_int(n_individuals_model(regression1_v1a)), fmt_int(n_individuals_model(regression1_v1a_check_wpsize50)) ,
+    "Year FEs"                                     , "Yes"  , "Yes"  , "Yes"  ,
+    "Industry-year FEs"                            , "Yes"  , "Yes"  , "Yes"  ,
+    "State-year FEs"                               , "Yes"  , "Yes"  , "Yes"  ,
+    "F-Statistic (df)"                             , f_df(test_10a), f_df(test_20a), f_df(test_50a) ,
+    "F-test p-value"                               , fmt_p(test_10a[2, "Pr(>F)"]), fmt_p(test_20a[2, "Pr(>F)"]), fmt_p(test_50a[2, "Pr(>F)"])
+  ),
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: log hourly wage in main job" = 2:4),
+    i = b1_robust_layout$groups
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, bold = FALSE, line = "b") |>
+  tinytable::style_tt(i = b1_robust_layout$headers, italic = TRUE) |>
+  # Coefficient rows, then 3 fit rows and 6 added rows
+  tinytable::style_tt(i = b1_robust_layout$coef_end + 1, line = "t") |>
+  tinytable::style_tt(i = b1_robust_layout$coef_end + 9, line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:4, align = "c") |>
+  pair_se_rows(b1_robust_layout$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of @eq-employee-wage with small workplaces defined as having fewer than 10, 20 (the baseline of @tbl-b1-main) or 50 people. The dependent variable is the log hourly wage in the employee's main job. Each column represents a different size threshold, which applies to both small single-site and small-site chain workplaces, and all columns use the owner shares without decay (Type 0). All columns include covariates for age, sex, origin group, casual or permanent employment, occupation, education, SEIFA decile, occupational tenure, employer tenure and union membership, and year, industry-year and state-year fixed effects. Reference categories are managers and administrators (occupation), Year 11 or below (education), native-born (origin), casual employment and no union membership. The F-statistic, with its degrees of freedom in parentheses, tests the null hypothesis that the three owner-share interactions are jointly zero, using the clustered covariance matrix; its p-value is reported in the row below. All standard errors reported in parentheses are clustered at the individual and industry-year levels. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: tbl-b1-placebo
+#| tbl-cap: "Owner density interacted with chain workplaces."
+#| echo: false
+
+share_labels <- c(
+  loo_mes = "MES owner density",
+  loo_mnes_higheng = "MNES high-English owner density",
+  loo_mnes_loweng = "MNES low-English owner density"
+)
+site_labels <- c(
+  small_single_site = "Small single-site",
+  small_site_chain = "Small-site chain",
+  chain_like = "Chain-like"
+)
+
+# One row per workplace type x share, merged across the three decay types
+coef_b1_placebo <- unlist(lapply(names(site_labels), \(w) {
+  unlist(lapply(names(share_labels), \(s) {
+    setNames(
+      rep(paste(site_labels[[w]], "x", share_labels[[s]]), 3),
+      paste0(w, ":", s, "_1d_type", 0:2)
+    )
+  }))
+}))
+
+b1_placebo_layout <- b1_full_layout(c(
+  "Firm structure" = 3,
+  "Main interactions" = 3,
+  "Small sites of multi-site employers" = 3,
+  "Chain-like workplaces" = 3
+))
+
+placebo_joint_p <- \(m, w) fmt_p(fixest::wald(m, keep = paste0("^", w, ":loo_"), print = FALSE)$p)
+
+modelsummary::modelsummary(
+  setNames(regression1_placebo, c("No decay (Type 0)", "Pooled decay (Type 1)", "Origin-specific decay (Type 2)")),
+  coef_map = c(site_labels, coef_b1_placebo, b1_controls),
+  gof_map = gof_comma(tribble(
+    ~raw,   ~clean,         ~fmt,
+    "nobs", "Observations (person-years)", 0
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = tibble::tibble(
+    term = c("Individuals", "Joint test, small-site chain (p-value)", "Joint test, chain-like (p-value)"),
+    `No decay (Type 0)` = c(fmt_int(n_individuals_model(regression1_placebo$type0)), placebo_joint_p(regression1_placebo$type0, "small_site_chain"), placebo_joint_p(regression1_placebo$type0, "chain_like")),
+    `Pooled decay (Type 1)` = c(fmt_int(n_individuals_model(regression1_placebo$type1)), placebo_joint_p(regression1_placebo$type1, "small_site_chain"), placebo_joint_p(regression1_placebo$type1, "chain_like")),
+    `Origin-specific decay (Type 2)` = c(fmt_int(n_individuals_model(regression1_placebo$type2)), placebo_joint_p(regression1_placebo$type2, "small_site_chain"), placebo_joint_p(regression1_placebo$type2, "chain_like"))
+  ),
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: log hourly wage in main job" = 2:4),
+    i = b1_placebo_layout$groups
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, bold = FALSE, line = "b") |>
+  tinytable::style_tt(i = b1_placebo_layout$headers, italic = TRUE) |>
+  # Coefficient rows, then 1 fit row and 3 added rows
+  tinytable::style_tt(i = b1_placebo_layout$coef_end, line = "b") |>
+  tinytable::style_tt(i = b1_placebo_layout$coef_end + 4, line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:4, align = "c") |>
+  pair_se_rows(b1_placebo_layout$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of @eq-employee-wage extended with interactions of the three owner shares with small-site chain and chain-like workplaces, as a robustness check. The dependent variable is the log hourly wage in the employee's main job. Each column represents a different weighting of the owner shares, namely no decay (Type 0, as in our main specification), pooled decay (Type 1) and origin-specific decay (Type 2). All columns include covariates for age, sex, origin group, casual or permanent employment, occupation, education, SEIFA decile, occupational tenure, employer tenure and union membership, and year, industry-year and state-year fixed effects. Reference categories are managers and administrators (occupation), Year 11 or below (education), native-born (origin), casual employment and no union membership. The joint tests report the p-value of a Wald test of the null hypothesis that the three owner-share interactions for that workplace type are jointly zero. All standard errors reported in parentheses are clustered at the individual and industry-year levels. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: tbl-b1-robustness-10
+#| tbl-cap: "Log hourly wages under 10-employee small-firm size threshold (full estimation results)."
+#| echo: false
+
+# Individuals per spec
+n_ind_10_a <- fixest::obs(regression1_v1a_check_wpsize10) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+n_ind_10_b <- fixest::obs(regression1_v1b_check_wpsize10) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+n_ind_10_c <- fixest::obs(regression1_v1c_check_wpsize10) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+
+# F-tests, clustered by individual and industry-year, joint null on all three firm-size x owner-share interactions
+test_10_a <- cluster_f_test(
+  regression1_v1a_check_wpsize10,
+  c(
+    "small_single_site_10:loo_mes_1d_type0 = 0",
+    "small_single_site_10:loo_mnes_higheng_1d_type0 = 0",
+    "small_single_site_10:loo_mnes_loweng_1d_type0 = 0"
+  )
+)
+f_stat_10_a <- test_10_a[2, "F"]
+df1_10_a    <- test_10_a[2, "Df"]
+df2_10_a    <- test_10_a[2, "Res.Df"]
+pval_10_a   <- test_10_a[2, "Pr(>F)"]
+
+test_10_b <- cluster_f_test(
+  regression1_v1b_check_wpsize10,
+  c(
+    "small_single_site_10:loo_mes_1d_type1 = 0",
+    "small_single_site_10:loo_mnes_higheng_1d_type1 = 0",
+    "small_single_site_10:loo_mnes_loweng_1d_type1 = 0"
+  )
+)
+f_stat_10_b <- test_10_b[2, "F"]
+df1_10_b    <- test_10_b[2, "Df"]
+df2_10_b    <- test_10_b[2, "Res.Df"]
+pval_10_b   <- test_10_b[2, "Pr(>F)"]
+
+test_10_c <- cluster_f_test(
+  regression1_v1c_check_wpsize10,
+  c(
+    "small_single_site_10:loo_mes_1d_type2 = 0",
+    "small_single_site_10:loo_mnes_higheng_1d_type2 = 0",
+    "small_single_site_10:loo_mnes_loweng_1d_type2 = 0"
+  )
+)
+f_stat_10_c <- test_10_c[2, "F"]
+df1_10_c    <- test_10_c[2, "Df"]
+df2_10_c    <- test_10_c[2, "Res.Df"]
+pval_10_c   <- test_10_c[2, "Pr(>F)"]
+
+b1_layout_10 <- b1_full_layout(c(
+  "Firm structure" = 3,
+  "Interactions of firm structure with owner density" = 3
+))
+
+b1_robust_10 <- list(
+  "No decay (Type 0)" = regression1_v1a_check_wpsize10,
+  "Pooled decay (Type 1)" = regression1_v1b_check_wpsize10,
+  "Origin-specific decay (Type 2)" = regression1_v1c_check_wpsize10
+)
+
+coef_b1_robust_10 <- c(
+  # Firm structure
+  "small_single_site_10" = "Small single-site",
+  "chain_like" = "Chain-like",
+  "small_site_chain_10" = "Small-site chain",
+  # Interactions
+  "small_single_site_10:loo_mes_1d_type0" = "Small single-site x MES owner density",
+  "small_single_site_10:loo_mes_1d_type1" = "Small single-site x MES owner density",
+  "small_single_site_10:loo_mes_1d_type2" = "Small single-site x MES owner density",
+  "small_single_site_10:loo_mnes_higheng_1d_type0" = "Small single-site x MNES high-English owner density",
+  "small_single_site_10:loo_mnes_higheng_1d_type1" = "Small single-site x MNES high-English owner density",
+  "small_single_site_10:loo_mnes_higheng_1d_type2" = "Small single-site x MNES high-English owner density",
+  "small_single_site_10:loo_mnes_loweng_1d_type0" = "Small single-site x MNES low-English owner density",
+  "small_single_site_10:loo_mnes_loweng_1d_type1" = "Small single-site x MNES low-English owner density",
+  "small_single_site_10:loo_mnes_loweng_1d_type2" = "Small single-site x MNES low-English owner density"
+)
+
+modelsummary::modelsummary(
+  b1_robust_10,
+  coef_map = c(coef_b1_robust_10, b1_controls),
+  gof_map = gof_comma(tribble(
+    ~raw            , ~clean               , ~fmt ,
+    "nobs"          , "Observations (person-years)"       ,    0 ,
+    "r.squared"     , "R-Squared"          ,    3 ,
+    "adj.r.squared" , "Adjusted R-Squared" ,    3
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = tibble::tribble(
+    ~term,               ~`No decay (Type 0)`,                                              ~`Pooled decay (Type 1)`,                                              ~`Origin-specific decay (Type 2)`,
+    "Individuals",       format(n_ind_10_a, big.mark = ","),                   format(n_ind_10_b, big.mark = ","),                   format(n_ind_10_c, big.mark = ","),
+    "Year FEs",          "Yes",                                               "Yes",                                               "Yes",
+    "Industry-year FEs", "Yes",                                               "Yes",                                               "Yes",
+    "State-year FEs",    "Yes",                                               "Yes",                                               "Yes",
+    "F-Statistic (df)",  sprintf("%.3f (%d, %d)", f_stat_10_a, df1_10_a, df2_10_a), sprintf("%.3f (%d, %d)", f_stat_10_b, df1_10_b, df2_10_b), sprintf("%.3f (%d, %d)", f_stat_10_c, df1_10_c, df2_10_c),
+    "F-test p-value",    fmt_p(pval_10_a),                          fmt_p(pval_10_b),                          fmt_p(pval_10_c)
+  ),
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: log hourly wage in main job" = 2:4),
+    i = b1_layout_10$groups
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, bold = FALSE, line = "b") |>
+  tinytable::style_tt(i = b1_layout_10$headers, italic = TRUE) |>
+  # Coefficient rows, then 3 fit rows and 6 added rows
+  tinytable::style_tt(i = b1_layout_10$coef_end + 1, line = "t") |>
+  tinytable::style_tt(i = b1_layout_10$coef_end + 9, line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:4, align = "c") |>
+  pair_se_rows(b1_layout_10$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of @eq-employee-wage with small workplaces defined as having fewer than 10 people. The dependent variable is the log hourly wage in the employee's main job. Each column represents a different weighting of the owner shares, namely no decay (Type 0, $\lambda = 0$), pooled decay (Type 1, $\lambda = `r lambda_mean`$) and origin-specific decay (Type 2, $\lambda_{\text{MES}} = `r lambda_mes`$ and $\lambda_{\text{MNES}} = `r lambda_other`$). All columns include covariates for age, sex, origin group, casual or permanent employment, occupation, education, SEIFA decile, occupational tenure, employer tenure and union membership, and year, industry-year and state-year fixed effects. Reference categories are managers and administrators (occupation), Year 11 or below (education), native-born (origin), casual employment and no union membership. The F-statistic, with its degrees of freedom in parentheses, tests the null hypothesis that the three owner-share interactions are jointly zero, using the clustered covariance matrix; its p-value is reported in the row below. All standard errors reported in parentheses are clustered at the individual and industry-year levels. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+
+```{r}
+#| label: tbl-b1-appendix
+#| tbl-cap: "Employee wage results under the three weightings of the owner shares, with all controls."
+#| echo: false
+
+# Individuals per spec
+n_ind_20_a <- fixest::obs(regression1_v1a) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+n_ind_20_b <- fixest::obs(regression1_v1b) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+n_ind_20_c <- fixest::obs(regression1_v1c) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+
+# F-tests, clustered by individual and industry-year, joint null on all three firm-size x owner-share interactions
+test_20_a <- cluster_f_test(
+  regression1_v1a,
+  c(
+    "small_single_site:loo_mes_1d_type0 = 0",
+    "small_single_site:loo_mnes_higheng_1d_type0 = 0",
+    "small_single_site:loo_mnes_loweng_1d_type0 = 0"
+  )
+)
+f_stat_20_a <- test_20_a[2, "F"]
+df1_20_a    <- test_20_a[2, "Df"]
+df2_20_a    <- test_20_a[2, "Res.Df"]
+pval_20_a   <- test_20_a[2, "Pr(>F)"]
+
+test_20_b <- cluster_f_test(
+  regression1_v1b,
+  c(
+    "small_single_site:loo_mes_1d_type1 = 0",
+    "small_single_site:loo_mnes_higheng_1d_type1 = 0",
+    "small_single_site:loo_mnes_loweng_1d_type1 = 0"
+  )
+)
+f_stat_20_b <- test_20_b[2, "F"]
+df1_20_b    <- test_20_b[2, "Df"]
+df2_20_b    <- test_20_b[2, "Res.Df"]
+pval_20_b   <- test_20_b[2, "Pr(>F)"]
+
+test_20_c <- cluster_f_test(
+  regression1_v1c,
+  c(
+    "small_single_site:loo_mes_1d_type2 = 0",
+    "small_single_site:loo_mnes_higheng_1d_type2 = 0",
+    "small_single_site:loo_mnes_loweng_1d_type2 = 0"
+  )
+)
+f_stat_20_c <- test_20_c[2, "F"]
+df1_20_c    <- test_20_c[2, "Df"]
+df2_20_c    <- test_20_c[2, "Res.Df"]
+pval_20_c   <- test_20_c[2, "Pr(>F)"]
+
+b1_layout_20 <- b1_full_layout(c(
+  "Firm structure" = 3,
+  "Interactions of firm structure with owner density" = 3
+))
+
+b1_robust_20 <- list(
+  "No decay (Type 0)" = regression1_v1a,
+  "Pooled decay (Type 1)" = regression1_v1b,
+  "Origin-specific decay (Type 2)" = regression1_v1c
+)
+
+coef_b1_robust_20 <- c(
+  # Firm structure
+  "small_single_site" = "Small single-site",
+  "chain_like" = "Chain-like",
+  "small_site_chain" = "Small-site chain",
+  # Interactions
+  "small_single_site:loo_mes_1d_type0" = "Small single-site x MES owner density",
+  "small_single_site:loo_mes_1d_type1" = "Small single-site x MES owner density",
+  "small_single_site:loo_mes_1d_type2" = "Small single-site x MES owner density",
+  "small_single_site:loo_mnes_higheng_1d_type0" = "Small single-site x MNES high-English owner density",
+  "small_single_site:loo_mnes_higheng_1d_type1" = "Small single-site x MNES high-English owner density",
+  "small_single_site:loo_mnes_higheng_1d_type2" = "Small single-site x MNES high-English owner density",
+  "small_single_site:loo_mnes_loweng_1d_type0" = "Small single-site x MNES low-English owner density",
+  "small_single_site:loo_mnes_loweng_1d_type1" = "Small single-site x MNES low-English owner density",
+  "small_single_site:loo_mnes_loweng_1d_type2" = "Small single-site x MNES low-English owner density"
+)
+
+modelsummary::modelsummary(
+  b1_robust_20,
+  coef_map = c(coef_b1_robust_20, b1_controls),
+  gof_map = gof_comma(tribble(
+    ~raw            , ~clean               , ~fmt ,
+    "nobs"          , "Observations (person-years)"       ,    0 ,
+    "r.squared"     , "R-Squared"          ,    3 ,
+    "adj.r.squared" , "Adjusted R-Squared" ,    3
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = tibble::tribble(
+    ~term,               ~`No decay (Type 0)`,                                              ~`Pooled decay (Type 1)`,                                              ~`Origin-specific decay (Type 2)`,
+    "Individuals",       format(n_ind_20_a, big.mark = ","),                   format(n_ind_20_b, big.mark = ","),                   format(n_ind_20_c, big.mark = ","),
+    "Year FEs",          "Yes",                                               "Yes",                                               "Yes",
+    "Industry-year FEs", "Yes",                                               "Yes",                                               "Yes",
+    "State-year FEs",    "Yes",                                               "Yes",                                               "Yes",
+    "F-Statistic (df)",  sprintf("%.3f (%d, %d)", f_stat_20_a, df1_20_a, df2_20_a), sprintf("%.3f (%d, %d)", f_stat_20_b, df1_20_b, df2_20_b), sprintf("%.3f (%d, %d)", f_stat_20_c, df1_20_c, df2_20_c),
+    "F-test p-value",    fmt_p(pval_20_a),                          fmt_p(pval_20_b),                          fmt_p(pval_20_c)
+  ),
+  output = "tinytable") |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: log hourly wage in main job" = 2:4),
+    i = b1_layout_20$groups
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, bold = FALSE, line = "b") |>
+  tinytable::style_tt(i = b1_layout_20$headers, italic = TRUE) |>
+  # Coefficient rows, then 3 fit rows and 6 added rows
+  tinytable::style_tt(i = b1_layout_20$coef_end + 1, line = "t") |>
+  tinytable::style_tt(i = b1_layout_20$coef_end + 9, line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:4, align = "c") |>
+  pair_se_rows(b1_layout_20$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of @eq-employee-wage with small workplaces defined as having fewer than 20 people. These are the full results of @tbl-b1-main. The dependent variable is the log hourly wage in the employee's main job. Each column represents a different weighting of the owner shares, namely no decay (Type 0, $\lambda = 0$), pooled decay (Type 1, $\lambda = `r lambda_mean`$) and origin-specific decay (Type 2, $\lambda_{\text{MES}} = `r lambda_mes`$ and $\lambda_{\text{MNES}} = `r lambda_other`$). All columns include covariates for age, sex, origin group, casual or permanent employment, occupation, education, SEIFA decile, occupational tenure, employer tenure and union membership, and year, industry-year and state-year fixed effects. Reference categories are managers and administrators (occupation), Year 11 or below (education), native-born (origin), casual employment and no union membership. The F-statistic, with its degrees of freedom in parentheses, tests the null hypothesis that the three owner-share interactions are jointly zero, using the clustered covariance matrix; its p-value is reported in the row below. All standard errors reported in parentheses are clustered at the individual and industry-year levels. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+
+```{r}
+#| label: tbl-b1-robustness-50
+#| tbl-cap: "Log hourly wages under 50-employee small-firm size threshold (full estimation results)."
+#| echo: false
+
+# Individuals per spec
+n_ind_50_a <- fixest::obs(regression1_v1a_check_wpsize50) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+n_ind_50_b <- fixest::obs(regression1_v1b_check_wpsize50) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+n_ind_50_c <- fixest::obs(regression1_v1c_check_wpsize50) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+
+# F-tests, clustered by individual and industry-year, joint null on all three firm-size x owner-share interactions
+test_50_a <- cluster_f_test(
+  regression1_v1a_check_wpsize50,
+  c("small_single_site_50:loo_mes_1d_type0 = 0", "small_single_site_50:loo_mnes_higheng_1d_type0 = 0", "small_single_site_50:loo_mnes_loweng_1d_type0 = 0")
+)
+f_stat_50_a <- test_50_a[2, "F"]
+df1_50_a    <- test_50_a[2, "Df"]
+df2_50_a    <- test_50_a[2, "Res.Df"]
+pval_50_a   <- test_50_a[2, "Pr(>F)"]
+
+test_50_b <- cluster_f_test(
+  regression1_v1b_check_wpsize50,
+  c("small_single_site_50:loo_mes_1d_type1 = 0", "small_single_site_50:loo_mnes_higheng_1d_type1 = 0", "small_single_site_50:loo_mnes_loweng_1d_type1 = 0")
+)
+f_stat_50_b <- test_50_b[2, "F"]
+df1_50_b    <- test_50_b[2, "Df"]
+df2_50_b    <- test_50_b[2, "Res.Df"]
+pval_50_b   <- test_50_b[2, "Pr(>F)"]
+
+test_50_c <- cluster_f_test(
+  regression1_v1c_check_wpsize50,
+  c("small_single_site_50:loo_mes_1d_type2 = 0", "small_single_site_50:loo_mnes_higheng_1d_type2 = 0", "small_single_site_50:loo_mnes_loweng_1d_type2 = 0")
+)
+f_stat_50_c <- test_50_c[2, "F"]
+df1_50_c    <- test_50_c[2, "Df"]
+df2_50_c    <- test_50_c[2, "Res.Df"]
+pval_50_c   <- test_50_c[2, "Pr(>F)"]
+ 
+b1_layout_50 <- b1_full_layout(c(
+  "Firm structure" = 3,
+  "Interactions of firm structure with owner density" = 3
+))
+
+b1_robust_50 <- list(
+  "No decay (Type 0)" = regression1_v1a_check_wpsize50,
+  "Pooled decay (Type 1)" = regression1_v1b_check_wpsize50,
+  "Origin-specific decay (Type 2)" = regression1_v1c_check_wpsize50
+)
+
+coef_b1_robust_50 <- c(
+  # Firm structure
+  "small_single_site_50" = "Small single-site",
+  "chain_like" = "Chain-like",
+  "small_site_chain_50" = "Small-site chain",
+  # Interactions
+  "small_single_site_50:loo_mes_1d_type0" = "Small single-site x MES owner density",
+  "small_single_site_50:loo_mes_1d_type1" = "Small single-site x MES owner density",
+  "small_single_site_50:loo_mes_1d_type2" = "Small single-site x MES owner density",
+  "small_single_site_50:loo_mnes_higheng_1d_type0" = "Small single-site x MNES high-English owner density",
+  "small_single_site_50:loo_mnes_higheng_1d_type1" = "Small single-site x MNES high-English owner density",
+  "small_single_site_50:loo_mnes_higheng_1d_type2" = "Small single-site x MNES high-English owner density",
+  "small_single_site_50:loo_mnes_loweng_1d_type0" = "Small single-site x MNES low-English owner density",
+  "small_single_site_50:loo_mnes_loweng_1d_type1" = "Small single-site x MNES low-English owner density",
+  "small_single_site_50:loo_mnes_loweng_1d_type2" = "Small single-site x MNES low-English owner density"
+)
+
+modelsummary::modelsummary(
+  b1_robust_50,
+  coef_map = c(coef_b1_robust_50, b1_controls),
+  gof_map = gof_comma(tribble(
+    ~raw            , ~clean               , ~fmt ,
+    "nobs"          , "Observations (person-years)"       ,    0 ,
+    "r.squared"     , "R-Squared"          ,    3 ,
+    "adj.r.squared" , "Adjusted R-Squared" ,    3
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = tibble::tribble(
+    ~term,               ~`No decay (Type 0)`,                                              ~`Pooled decay (Type 1)`,                                              ~`Origin-specific decay (Type 2)`,
+    "Individuals",       format(n_ind_50_a, big.mark = ","),                   format(n_ind_50_b, big.mark = ","),                   format(n_ind_50_c, big.mark = ","),
+    "Year FEs",          "Yes",                                               "Yes",                                               "Yes",
+    "Industry-year FEs", "Yes",                                               "Yes",                                               "Yes",
+    "State-year FEs",    "Yes",                                               "Yes",                                               "Yes",
+    "F-Statistic (df)",  sprintf("%.3f (%d, %d)", f_stat_50_a, df1_50_a, df2_50_a), sprintf("%.3f (%d, %d)", f_stat_50_b, df1_50_b, df2_50_b), sprintf("%.3f (%d, %d)", f_stat_50_c, df1_50_c, df2_50_c),
+    "F-test p-value",    fmt_p(pval_50_a),                          fmt_p(pval_50_b),                          fmt_p(pval_50_c)
+  ),
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: log hourly wage in main job" = 2:4),
+    i = b1_layout_50$groups
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, bold = FALSE, line = "b") |>
+  tinytable::style_tt(i = b1_layout_50$headers, italic = TRUE) |>
+  # Coefficient rows, then 3 fit rows and 6 added rows
+  tinytable::style_tt(i = b1_layout_50$coef_end + 1, line = "t") |>
+  tinytable::style_tt(i = b1_layout_50$coef_end + 9, line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:4, align = "c") |>
+  pair_se_rows(b1_layout_50$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of @eq-employee-wage with small workplaces defined as having fewer than 50 people. The dependent variable is the log hourly wage in the employee's main job. Each column represents a different weighting of the owner shares, namely no decay (Type 0, $\lambda = 0$), pooled decay (Type 1, $\lambda = `r lambda_mean`$) and origin-specific decay (Type 2, $\lambda_{\text{MES}} = `r lambda_mes`$ and $\lambda_{\text{MNES}} = `r lambda_other`$). All columns include covariates for age, sex, origin group, casual or permanent employment, occupation, education, SEIFA decile, occupational tenure, employer tenure and union membership, and year, industry-year and state-year fixed effects. Reference categories are managers and administrators (occupation), Year 11 or below (education), native-born (origin), casual employment and no union membership. The F-statistic, with its degrees of freedom in parentheses, tests the null hypothesis that the three owner-share interactions are jointly zero, using the clustered covariance matrix; its p-value is reported in the row below. All standard errors reported in parentheses are clustered at the individual and industry-year levels. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: tbl-b1v2-appendix
+#| tbl-cap: "Log hourly wages under 20-employee small-firm size threshold, migrant and English-proficiency owner share specification, by industry classification granularity."
+#| echo: false
+
+test_20_v2a <- cluster_f_test(
+  regression1_v2a,
+  c("small_single_site:loo_migrant_share_1d = 0", "small_single_site:loo_loweng_share_1d = 0")
+)
+f_stat_20_v2a  <- test_20_v2a[2, "F"]
+df1_20_v2a     <- test_20_v2a[2, "Df"]
+df2_20_v2a     <- test_20_v2a[2, "Res.Df"]
+pval_20_v2a    <- test_20_v2a[2, "Pr(>F)"]
+
+test_20_v4a <- cluster_f_test(
+  regression1_v4a,
+  c("small_single_site:loo_migrant_share_2d = 0", "small_single_site:loo_loweng_share_2d = 0")
+)
+f_stat_20_v4a  <- test_20_v4a[2, "F"]
+df1_20_v4a     <- test_20_v4a[2, "Df"]
+df2_20_v4a     <- test_20_v4a[2, "Res.Df"]
+pval_20_v4a    <- test_20_v4a[2, "Pr(>F)"]
+
+b1v2_layout <- b1_full_layout(c(
+  "Firm structure" = 3,
+  "Interactions of firm structure with owner density" = 2
+))
+
+b1v2_robust_20 <- list(
+  "One-digit industry" = regression1_v2a,
+  "Two-digit industry" = regression1_v4a
+)
+
+n_ind_20_v2a <- fixest::obs(regression1_v2a) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+n_ind_20_v4a <- fixest::obs(regression1_v4a) |> (\(idx) data_regression_1$xwaveid[idx])() |> dplyr::n_distinct()
+
+coef_b1v2_robust_20 <- c(
+  # Firm structure
+  "small_single_site" = "Small single-site",
+  "chain_like" = "Chain-like",
+  "small_site_chain" = "Small-site chain",
+  # Interactions
+  "small_single_site:loo_migrant_share_1d" = "Small single-site x Migrant owner density",
+  "small_single_site:loo_migrant_share_2d" = "Small single-site x Migrant owner density",
+  "small_single_site:loo_loweng_share_1d" = "Small single-site x Low-English owner density",
+  "small_single_site:loo_loweng_share_2d" = "Small single-site x Low-English owner density"
+)
+
+modelsummary::modelsummary(
+  b1v2_robust_20,
+  coef_map = c(coef_b1v2_robust_20, b1_controls),
+  gof_map = gof_comma(tribble(
+    ~raw,            ~clean,               ~fmt,
+    "nobs",          "Observations (person-years)",       0,
+    "r.squared",     "R-Squared",          3,
+    "adj.r.squared", "Adjusted R-Squared", 3
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = tibble::tribble(
+    ~term,                 ~`One-digit industry`,                                                  ~`Two-digit industry`,
+    "Individuals",         format(n_ind_20_v2a, big.mark = ","),                     format(n_ind_20_v4a, big.mark = ","),
+    "Industry classification", "1-digit (19 categories)",                           paste0("2-digit (", dplyr::n_distinct(data_regression_1$industry_sparsecategories_jbmi62[fixest::obs(regression1_v4a)]), " categories)"),
+    "Year FEs",             "Yes",                                                   "Yes",
+    "Industry-year FEs",    "Yes",                                                   "Yes",
+    "State-year FEs",       "Yes",                                                   "Yes",
+    "F-Statistic (df)",     sprintf("%.3f (%d, %d)", f_stat_20_v2a, df1_20_v2a, df2_20_v2a), sprintf("%.3f (%d, %d)", f_stat_20_v4a, df1_20_v4a, df2_20_v4a),
+    "F-test p-value",       fmt_p(pval_20_v2a),                            fmt_p(pval_20_v4a)
+  ),
+  output = "tinytable") |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: log hourly wage in main job" = 2:3),
+    i = b1v2_layout$groups
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, bold = FALSE, line = "b") |>
+  tinytable::style_tt(i = b1v2_layout$headers, italic = TRUE) |>
+  # Coefficient rows, then 3 fit rows and 7 added rows
+  tinytable::style_tt(i = b1v2_layout$coef_end + 1, line = "t") |>
+  tinytable::style_tt(i = b1v2_layout$coef_end + 10, line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:3, align = "c") |>
+  pair_se_rows(b1v2_layout$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of an alternative to @eq-employee-wage that replaces the three origin-specific owner shares with the share of all migrant owners, $\text{MO}^{(-i)}_{kt}$, and the share of low-English migrant owners, $\text{LEMO}^{(-i)}_{kt}$,
+
+$$
+\begin{aligned}
+\log w_{it} = {} & \delta_t + \mu_{kt} + \nu_{rt} \\
+& + \beta_1 \text{SmallSingleSite}_{it} + \beta_2 \text{SmallSiteChain}_{it} + \beta_3 \text{ChainLike}_{it} \\
+& + \beta_4 \left(\text{SmallSingleSite}_{it} \times \text{MO}^{(-i)}_{kt}\right) + \beta_5 \left(\text{SmallSingleSite}_{it} \times \text{LEMO}^{(-i)}_{kt}\right) \\
+& + \mathbf{X}'_{it}\boldsymbol{\pi} + \epsilon_{it},
+\end{aligned}
+$$
+
+where $\text{MO}^{(-i)}_{kt}=\frac{\sum_{m \in (k,t), m\neq i} \omega_{mt} \text{Owner}_{mt} \text{Migrant}_m}{\sum_{m \in (k,t), m\neq i} \omega_{mt} \text{Owner}_{mt}}$ and $\text{LEMO}^{(-i)}_{kt}=\frac{\sum_{m \in (k,t), m\neq i} \omega_{mt} \text{Owner}_{mt} \text{Migrant}_m \text{LowEnglish}_m}{\sum_{m \in (k,t), m\neq i} \omega_{mt} \text{Owner}_{mt}}$ are leave-one-out shares in industry $k$ and year $t$, without decay. Low-English owners are also migrants, so $\beta_5$ measures how the small single-site gap changes with the share of low-English owners over and above the share of migrant owners. The dependent variable is the log hourly wage in the employee's main job. Each column represents a different level at which the industry cells, and so the owner shares and industry-year fixed effects, are defined, namely the 19 one-digit ANZSIC divisions used throughout, or two-digit ANZSIC industries. All columns include covariates for age, sex, origin group, casual or permanent employment, occupation, education, SEIFA decile, occupational tenure, employer tenure and union membership, and year, industry-year and state-year fixed effects. Reference categories are managers and administrators (occupation), Year 11 or below (education), native-born (origin), casual employment and no union membership. The F-statistic, with its degrees of freedom in parentheses, tests the null hypothesis that the two owner-share interactions are jointly zero, using the clustered covariance matrix; its p-value is reported in the row below. All standard errors reported in parentheses are clustered at the individual and one-digit industry-year levels. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: tbl-b1-robustness-2digit
+#| tbl-cap: "Baseline regression results for employee wages, two-digit ANZSIC industry classification (full estimation results)."
+#| echo: false
+
+# F-tests of the three owner-share interactions, one per weighting
+b1_2digit_f <- purrr::imap(
+  list(type0 = regression1_v3a, type1 = regression1_v3b, type2 = regression1_v3c),
+  \(m, type) cluster_f_test(m, paste0("small_single_site:", c("loo_mes_2d_", "loo_mnes_higheng_2d_", "loo_mnes_loweng_2d_"), type, " = 0"))
+)
+
+b1_2digit_layout <- b1_full_layout(c(
+  "Firm structure" = 3,
+  "Interactions of firm structure with owner density" = 3
+))
+
+b1_2digit_models <- list(
+  "No decay (Type 0)" = regression1_v3a,
+  "Pooled decay (Type 1)" = regression1_v3b,
+  "Origin-specific decay (Type 2)" = regression1_v3c
+)
+
+coef_b1_2digit <- c(
+  "small_single_site" = "Small single-site",
+  "chain_like" = "Chain-like",
+  "small_site_chain" = "Small-site chain",
+  "small_single_site:loo_mes_2d_type0" = "Small single-site x MES owner density",
+  "small_single_site:loo_mes_2d_type1" = "Small single-site x MES owner density",
+  "small_single_site:loo_mes_2d_type2" = "Small single-site x MES owner density",
+  "small_single_site:loo_mnes_higheng_2d_type0" = "Small single-site x MNES high-English owner density",
+  "small_single_site:loo_mnes_higheng_2d_type1" = "Small single-site x MNES high-English owner density",
+  "small_single_site:loo_mnes_higheng_2d_type2" = "Small single-site x MNES high-English owner density",
+  "small_single_site:loo_mnes_loweng_2d_type0" = "Small single-site x MNES low-English owner density",
+  "small_single_site:loo_mnes_loweng_2d_type1" = "Small single-site x MNES low-English owner density",
+  "small_single_site:loo_mnes_loweng_2d_type2" = "Small single-site x MNES low-English owner density"
+)
+
+modelsummary::modelsummary(
+  b1_2digit_models,
+  coef_map = c(coef_b1_2digit, b1_controls),
+  gof_map = gof_comma(tribble(
+    ~raw            , ~clean               , ~fmt ,
+    "nobs"          , "Observations (person-years)"       ,    0 ,
+    "r.squared"     , "R-Squared"          ,    3 ,
+    "adj.r.squared" , "Adjusted R-Squared" ,    3
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = tibble::tribble(
+    ~term                          , ~`No decay (Type 0)` , ~`Pooled decay (Type 1)` , ~`Origin-specific decay (Type 2)` ,
+    "Individuals"                  , fmt_int(n_individuals_model(regression1_v3a)), fmt_int(n_individuals_model(regression1_v3b)), fmt_int(n_individuals_model(regression1_v3c)) ,
+    "Year FEs"                     , "Yes"  , "Yes"  , "Yes"  ,
+    "Industry-year FEs (2-digit)"  , "Yes"  , "Yes"  , "Yes"  ,
+    "State-year FEs"               , "Yes"  , "Yes"  , "Yes"  ,
+    "F-Statistic (df)"             , f_df(b1_2digit_f$type0), f_df(b1_2digit_f$type1), f_df(b1_2digit_f$type2) ,
+    "F-test p-value"               , fmt_p(b1_2digit_f$type0[2, "Pr(>F)"]), fmt_p(b1_2digit_f$type1[2, "Pr(>F)"]), fmt_p(b1_2digit_f$type2[2, "Pr(>F)"])
+  ),
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: log hourly wage in main job" = 2:4),
+    i = b1_2digit_layout$groups
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, bold = FALSE, line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(i = b1_2digit_layout$headers, italic = TRUE) |>
+  # Coefficient rows, then 3 fit rows and 6 added rows
+  tinytable::style_tt(i = b1_2digit_layout$coef_end + c(0, 9), line = "b") |>
+  tinytable::style_tt(j = 2:4, align = "c") |>
+  pair_se_rows(b1_2digit_layout$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of @eq-employee-wage with the owner shares and the industry-year fixed effects defined over two-digit ANZSIC industries instead of the 19 one-digit divisions used in @tbl-b1-main. The dependent variable is the log hourly wage in the employee's main job. Each column represents a different weighting of the owner shares, namely no decay (Type 0, $\lambda = 0$), pooled decay (Type 1, $\lambda = `r lambda_mean`$) and origin-specific decay (Type 2, $\lambda_{\text{MES}} = `r lambda_mes`$ and $\lambda_{\text{MNES}} = `r lambda_other`$). All columns include covariates for age, sex, origin group, casual or permanent employment, occupation, education, SEIFA decile, occupational tenure, employer tenure and union membership, and year, industry-year and state-year fixed effects. Reference categories are managers and administrators (occupation), Year 11 or below (education), native-born (origin), casual employment and no union membership. The F-statistic, with its degrees of freedom in parentheses, tests the null hypothesis that the three owner-share interactions are jointly zero, using the clustered covariance matrix; its p-value is reported in the row below. All standard errors reported in parentheses are clustered at the individual and one-digit industry-year levels, as in @tbl-b1-main. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+### Inference with Few Industry Clusters {#sec-appendix-wild}
+
+```{r}
+#| include: false
+# Values from the wild cluster bootstrap (05_analysisblock1.R) quoted below
+wild0 <- dplyr::filter(regression1_wild, type == "type0")
+wild_term <- \(share) paste0("small_single_site:loo_", share, "_1d_type0")
+wild_p <- \(share) fmt_p_eq(wild0$p_wild[wild0$term == wild_term(share)])
+wild_se <- \(share) sprintf("%.3f", wild0$se_industry[wild0$term == wild_term(share)])
+main_se <- \(share) sprintf("%.3f", fixest::se(regression1_v1a)[[wild_term(share)]])
+```
+
+The owner shares in @eq-employee-wage vary only across the 19 one-digit industries and the years within them, and they change slowly within an industry. The standard errors in @tbl-b1-main are clustered by individual and by industry-year. This allows the errors of employees in the same industry and year to be correlated, but treats different years of the same industry as independent. If the errors have a persistent industry component, for example because small firms in some industries pay well for reasons that the controls do not capture, then both the owner shares and the errors are correlated across the years of an industry, and these standard errors understate the uncertainty [@moulton_illustration_1990].
+
+Clustering by industry allows for this correlation, but it creates a second problem. After the fixed effects are partialled out, the cluster-robust variance estimator is
+
+$$
+\hat{V} = (X'X)^{-1}\left(\sum_{g=1}^{G} X_g'\hat{u}_g\hat{u}_g'X_g\right)(X'X)^{-1},
+$$ {#eq-crve}
+
+where $X_g$ and $\hat{u}_g$ are the regressors and residuals of industry $g$. With $G = 19$, the middle term is built from only 19 outer products. The estimator is consistent only as the number of clusters grows. With few clusters it is biased downward, because least squares fits each cluster's residuals partly to its own data, and the resulting t-statistics have thicker tails than the normal distribution. Conventional tests therefore reject a true null hypothesis too often [@cameron_bootstrap_2008].
+
+To address this problem, we use the wild cluster bootstrap with the null hypothesis imposed [@cameron_bootstrap_2008]. To test $H_0: \beta_j = 0$, we first estimate @eq-employee-wage with $\beta_j$ set to zero, which gives the restricted fitted values $X_g\tilde{\beta}$ and residuals $\tilde{u}_g$. We then construct $B = 9{,}999$ bootstrap samples,
+
+$$
+y^{*b}_g = X_g\tilde{\beta} + v^{b}_g\,\tilde{u}_g, \qquad g = 1, \dots, G, \quad b = 1, \dots, B,
+$$ {#eq-wild}
+
+where $v^{b}_g$ is drawn independently for each industry from the six-point distribution of @webb_reworking_2023, which takes the values $\pm\sqrt{1/2}$, $\pm 1$ and $\pm\sqrt{3/2}$ with equal probability. In each sample we re-estimate the unrestricted model and compute the t-statistic $t^{*b}_j$ with the industry-clustered variance of @eq-crve. The bootstrap p-value is the share of these t-statistics that are at least as large in absolute value as the t-statistic $\hat{t}_j$ from the data,
+
+$$
+p^{*}_j = \frac{1}{B}\sum_{b=1}^{B} \mathbf{1}\left[\,\left|t^{*b}_j\right| \ge \left|\hat{t}_j\right|\,\right].
+$$
+
+The joint test is constructed in the same way, with all three interactions set to zero and the Wald statistic in place of the t-statistic.
+
+The procedure addresses both problems. First, every observation of an industry is multiplied by the same $v^{b}_g$, which has mean zero and variance one. Each bootstrap sample therefore keeps the correlation of the errors within an industry, across workers and across years, while industries remain independent. Second, $t^{*b}_j$ is computed with the same estimator and the same 19 clusters as $\hat{t}_j$, so the bootstrap distribution inherits the downward bias and the thick tails of the clustered t-statistic. We compare $\hat{t}_j$ with this distribution instead of the normal distribution, so we do not need the clustered standard error itself to be accurate. Imposing the null hypothesis ensures that the bootstrap samples are generated under the hypothesis being tested.
+
+@tbl-b1-wild reports the results. Clustering by industry roughly doubles the standard errors of the MES and high-English interactions, from `r main_se("mes")` to `r wild_se("mes")` and from `r main_se("mnes_higheng")` to `r wild_se("mnes_higheng")`, which indicates that the errors are correlated across the years of an industry. Under the wild cluster bootstrap, the high-English interaction remains significant at the 5 per cent level ($p `r wild_p("mnes_higheng")`$), while the MES interaction ($p `r wild_p("mes")`$) and the joint test of all three interactions ($p `r fmt_p_eq(wild0$p_wild[wild0$term == "joint"])`$) are not significant. The low-English interaction is insignificant under both approaches ($p `r wild_p("mnes_loweng")`$). The narrowing of the small single-site wage gap where high-English MNES owners are common is therefore robust to correlation within industries, but the MES interaction is not. The bootstrap is least reliable for the low-English interaction, because that share is zero in most industry-years and its variation comes from a few industries [@mackinnon_wild_2018].
+
+```{r}
+#| label: tbl-b1-wild
+#| tbl-cap: "Owner-share interactions with p-values that cluster by industry (wild cluster bootstrap)."
+#| echo: false
+
+b1_wild_models <- list(type0 = regression1_v1a, type1 = regression1_v1b, type2 = regression1_v1c)
+
+b1_wild_table <- purrr::map_dfr(names(b1_wild_models), \(type) {
+  m <- b1_wild_models[[type]]
+  w <- dplyr::filter(regression1_wild, type == !!type)
+  terms <- w$term[w$term != "joint"]
+  ct <- fixest::coeftable(m)
+  joint <- cluster_f_test(m, paste(terms, "= 0"))
+  tibble::tibble(
+    `Owner share` = c(
+      "Small single-site x MES owner share",
+      "Small single-site x MNES high-English owner share",
+      "Small single-site x MNES low-English owner share",
+      "All three interactions jointly"
+    ),
+    Coefficient = c(sprintf("%.3f", ct[terms, 1]), ""),
+    `p-value, individual and industry-year clusters` = c(fmt_p(ct[terms, 4]), fmt_p(joint[2, "Pr(>F)"])),
+    `Standard error, industry clusters` = c(sprintf("%.3f", w$se_industry[seq_along(terms)]), ""),
+    `Wild bootstrap p-value, industry clusters` = fmt_p(w$p_wild)
+  )
+})
+
+b1_wild_table |>
+  tinytable::tt(width = c(0.36, 0.12, 0.18, 0.16, 0.18)) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(i = list(
+    "No decay (Type 0)" = 1,
+    "Pooled decay (Type 1)" = 5,
+    "Origin-specific decay (Type 2)" = 9
+  )) |>
+  tinytable::style_tt(i = 0, line = "tb") |>
+  tinytable::style_tt(i = c(1, 6, 11), italic = TRUE) |>
+  tinytable::style_tt(i = 15, line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:5, align = "c")
+```
+
+::: {.notes}
+*Notes:* This table reports the owner-share interactions of @tbl-b1-main with p-values from two clustering schemes, with one panel for each weighting of the owner shares. *p-value, individual and industry-year clusters* is from the standard errors of @tbl-b1-main, and for the joint row from its F-test. The last two columns cluster at the industry level instead, which allows the errors of all years of an industry to be correlated. *Standard error, industry clusters* is the conventional clustered standard error with 19 industry clusters. *Wild bootstrap p-value, industry clusters* is from a wild cluster bootstrap that imposes the null hypothesis [@cameron_bootstrap_2008], with the six-point weights of @webb_reworking_2023 and 9,999 replications. For the joint row, the null is that all three interactions are zero.
+:::
+
+### Owner Shares Built with the Longitudinal Weight {#sec-appendix-lnw}
+
+```{r}
+#| include: false
+
+# Share of owner person-years (waves 2 to 21) with a positive longitudinal
+# weight, quoted in the text below
+b1_lnw_owners <- panel_final |>
+  dplyr::filter(
+    dplyr::coalesce(is_owner == 1L, FALSE),
+    !is.na(origin_group),
+    as.integer(as.character(wave)) <= 21
+  ) |>
+  dplyr::mutate(
+    wave_num = as.integer(as.character(wave)),
+    has_lnw = dplyr::coalesce(responding_person_longitudinal_weight_lnwtrp, 0) > 0
+  )
+b1_lnw_cover <- c(
+  all = mean(b1_lnw_owners$has_lnw[b1_lnw_owners$wave_num >= 2]),
+  mnes_loweng = mean(b1_lnw_owners$has_lnw[b1_lnw_owners$origin_group == "mnes_loweng" & b1_lnw_owners$wave_num >= 2])
+)
+b1_lnw_persons <- b1_lnw_owners |>
+  dplyr::filter(origin_group == "mnes_loweng") |>
+  dplyr::summarise(all = dplyr::n_distinct(xwaveid), with_weight = dplyr::n_distinct(xwaveid[has_lnw])) |>
+  unlist()
+# Low-English interaction under each weight, quoted in the text below
+b1_le <- \(m, term) sprintf("%.3f", coef(m)[[term]])
+b1_le_p <- \(m, term) fmt_p_eq(fixest::pvalue(m)[[term]])
+b1_le_term <- "small_single_site:loo_mnes_loweng_1d_type0"
+```
+
+Our main owner shares weight each owner by the HILDA cross-sectional responding-person weight, because each share describes the owners of an industry in a single wave. As a sensitivity check, @tbl-b1-lnw re-estimates the main specification and the two decay weightings with the shares weighted instead by the longitudinal responding-person weight. The decay rates are calibrated on these shares by an earlier version of the cross-validation in @sec-loo-shares, which used a narrower employee sample and did not control for the worker's origin, giving $\lambda = `r lambda_mean_lnw`$ for Type 1 and $\lambda_{\text{MES}} = `r lambda_mes_lnw`$ and $\lambda_{\text{MNES}} = `r lambda_other_lnw`$ for Type 2. This weight is zero in wave 1 and positive only for people who have responded in every wave since wave 1, so it gives weight to a shrinking subset of owners. Over waves 2 to 21 it is positive for `r fmt_num(100 * b1_lnw_cover[["all"]], 0)` per cent of owner person-years, but for only `r fmt_num(100 * b1_lnw_cover[["mnes_loweng"]], 0)` per cent of the person-years of low-English owners, and for `r b1_lnw_persons[["with_weight"]]` of the `r b1_lnw_persons[["all"]]` low-English owners observed in waves 1 to 21.
+
+Without decay, the MES and high-English interactions have the same signs and similar sizes under both weights. The low-English interaction does not. Without decay it is $`r b1_le(regression1_lnw$type0, paste0(b1_le_term, "_lnw"))`$ ($p `r b1_le_p(regression1_lnw$type0, paste0(b1_le_term, "_lnw"))`$) with the longitudinal weight but $`r b1_le(regression1_v1a, b1_le_term)`$ ($p `r b1_le_p(regression1_v1a, b1_le_term)`$) with the cross-sectional weight (@tbl-b1-main), and the wild cluster bootstrap finds it insignificant under both weights (@tbl-b1-wild and @tbl-b1-lnw). The estimate for low-English owners therefore depends on which few owners receive weight, and we do not treat it as evidence in either direction.
+
+```{r}
+#| label: tbl-b1-lnw
+#| tbl-cap: "Employee wage results with owner shares weighted by the longitudinal survey weight (sensitivity check)."
+#| echo: false
+
+# Main results with the owner shares weighted by the longitudinal weight
+# (lnwtrp) instead of the cross-sectional weight, with decay rates calibrated
+# on the lnwtrp-weighted shares
+b1_lnw_types <- c(
+  "No decay (Type 0)" = "type0",
+  "Pooled decay (Type 1)" = "type1",
+  "Origin-specific decay (Type 2)" = "type2"
+)
+b1_lnw_models <- setNames(regression1_lnw[b1_lnw_types], names(b1_lnw_types))
+b1_lnw_inter <- \(type) paste0(
+  "small_single_site:", c("loo_mes_1d_", "loo_mnes_higheng_1d_", "loo_mnes_loweng_1d_"), type, "_lnw"
+)
+
+coef_b1_lnw <- c(
+  "small_single_site" = "Small single-site",
+  "chain_like" = "Chain-like",
+  "small_site_chain" = "Small-site chain"
+)
+b1_lnw_groups <- c(mes = "MES", mnes_higheng = "MNES high-English", mnes_loweng = "MNES low-English")
+for (g in names(b1_lnw_groups)) {
+  for (type in b1_lnw_types) {
+    coef_b1_lnw[paste0("small_single_site:loo_", g, "_1d_", type, "_lnw")] <-
+      paste("Small single-site x", b1_lnw_groups[[g]], "owner density")
+  }
+}
+
+b1_lnw_layout <- b1_full_layout(c(
+  "Firm structure" = 3,
+  "Interactions of firm structure with owner density" = 3
+))
+
+# Joint F-tests and wild bootstrap p-values, one column per specification
+b1_lnw_f <- purrr::map(b1_lnw_types, \(type) {
+  cluster_f_test(regression1_lnw[[type]], paste(b1_lnw_inter(type), "= 0"))
+})
+b1_lnw_wild <- \(k) purrr::map_chr(b1_lnw_types, \(type) {
+  fmt_p(regression1_wild_lnw$p_wild[regression1_wild_lnw$type == type][k])
+})
+b1_lnw_rows <- dplyr::bind_rows(
+  c(term = "Individuals", purrr::map_chr(b1_lnw_models, \(m) fmt_int(n_individuals_model(m)))),
+  c(term = "Year FEs", setNames(rep("Yes", 3), names(b1_lnw_types))),
+  c(term = "Industry-year FEs", setNames(rep("Yes", 3), names(b1_lnw_types))),
+  c(term = "State-year FEs", setNames(rep("Yes", 3), names(b1_lnw_types))),
+  c(term = "F-Statistic (df)", purrr::map_chr(b1_lnw_f, \(f) sprintf("%.3f (%d, %d)", f[2, "F"], f[2, "Df"], f[2, "Res.Df"]))),
+  c(term = "F-test p-value", purrr::map_chr(b1_lnw_f, \(f) fmt_p(f[2, "Pr(>F)"]))),
+  c(term = "Wild bootstrap p-value, MES", b1_lnw_wild(1)),
+  c(term = "Wild bootstrap p-value, MNES high-English", b1_lnw_wild(2)),
+  c(term = "Wild bootstrap p-value, MNES low-English", b1_lnw_wild(3)),
+  c(term = "Wild bootstrap p-value, joint", b1_lnw_wild(4))
+)
+
+modelsummary::modelsummary(
+  b1_lnw_models,
+  coef_map = c(coef_b1_lnw, b1_controls),
+  gof_map = gof_comma(tribble(
+    ~raw            , ~clean                        , ~fmt ,
+    "nobs"          , "Observations (person-years)" ,    0 ,
+    "r.squared"     , "R-Squared"                   ,    3 ,
+    "adj.r.squared" , "Adjusted R-Squared"          ,    3
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = b1_lnw_rows,
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    i = b1_lnw_layout$groups,
+    j = list("Dependent variable: log hourly wage in main job" = 2:4)
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, bold = FALSE, line = "b") |>
+  tinytable::style_tt(i = b1_lnw_layout$headers, italic = TRUE) |>
+  # Rule under the coefficients, and at the bottom after 3 fit rows and 10 added rows
+  tinytable::style_tt(i = b1_lnw_layout$coef_end + c(0, 13), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:4, align = "c") |>
+  pair_se_rows(b1_lnw_layout$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of @eq-employee-wage with each owner in the leave-one-out shares of @eq-loo-shares weighted by the HILDA longitudinal responding-person weight instead of the cross-sectional weight. This weight is zero in wave 1 and positive only for people who have responded in every wave since, so there are fewer observations than in @tbl-b1-main where no other owner in the industry-year has a positive weight. The dependent variable is the log hourly wage in the employee's main job. Each column represents a different weighting of the owner shares, with decay rates calibrated on the longitudinally weighted shares, namely no decay (Type 0), pooled decay (Type 1, $\lambda = `r lambda_mean_lnw`$) and origin-specific decay (Type 2, $\lambda_{\text{MES}} = `r lambda_mes_lnw`$ and $\lambda_{\text{MNES}} = `r lambda_other_lnw`$). All columns include covariates for age, sex, origin group, casual or permanent employment, occupation, education, SEIFA decile, occupational tenure, employer tenure and union membership, and year, industry-year and state-year fixed effects. Reference categories are managers and administrators (occupation), Year 11 or below (education), native-born (origin), casual employment and no union membership. The F-statistic, with its degrees of freedom in parentheses, tests the null hypothesis that the three owner-share interactions are jointly zero, using the clustered covariance matrix; its p-value is reported in the row below. The wild bootstrap p-values test each interaction, and all three jointly, with errors clustered at the industry level, as in @tbl-b1-wild. All standard errors reported in parentheses are clustered at the individual and industry-year levels. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+## Owner Income and Risk {#sec-appendix-b2}
+
+This section reports the composition of the owner income samples, the estimates for large employers and own-account workers, and the full estimates behind @tbl-b2-main.
+
+```{r}
+#| label: fig-b2-distribution
+#| fig-cap: "Composition of the estimation sample by origin group."
+#| fig-subcap:
+#|   - "Person-pairs by year."
+#|   - "Business owners by industry."
+#| layout-ncol: 2
+#| echo: false
+#| fig-width: 6
+#| fig-height: 5
+#| fig-dpi: 300
+
+data_regression_2_pairs |>
+  dplyr::mutate(
+    origin_group = origin_recode(origin_group),
+    year = as.numeric(as.character(year))
+  ) |>
+  dplyr::count(year, origin_group) |>
+  ggplot2::ggplot(ggplot2::aes(x = year, y = n, fill = origin_group)) +
+  ggplot2::geom_col(width = 0.8) +
+  scale_fill_origin() +
+  ggplot2::scale_x_continuous(breaks = seq(2002, 2021, 4), expand = c(0, 0)) +
+  ggplot2::scale_y_continuous(
+    labels = scales::label_comma(),
+    expand = ggplot2::expansion(mult = c(0, 0.05))
+  ) +
+  ggplot2::labs(x = "Year", y = "Person-pairs") +
+  theme_thesis()
+
+owner_industry <- data_regression_2_pairs |>
+  dplyr::filter(status_pair != "stay_employee") |>
+  dplyr::mutate(
+    origin_group = origin_recode(origin_group),
+    industry = stringr::str_to_sentence(as.character(industry_pair))
+  ) |>
+  dplyr::count(industry, origin_group) |>
+  dplyr::mutate(share = n / sum(n), .by = industry)
+
+migrant_share <- owner_industry |>
+  dplyr::filter(origin_group != "Native-born") |>
+  dplyr::summarise(migrant_share = sum(share), .by = industry)
+
+owner_industry |>
+  dplyr::left_join(migrant_share, by = "industry") |>
+  ggplot2::ggplot(ggplot2::aes(
+    x = share,
+    y = reorder(industry, migrant_share),
+    fill = origin_group
+  )) +
+  ggplot2::geom_col(width = 0.75) +
+  scale_fill_origin() +
+  ggplot2::scale_x_continuous(
+    labels = scales::label_percent(accuracy = 1),
+    expand = c(0, 0),
+    breaks = seq(0, 1, 0.25)
+  ) +
+  ggplot2::labs(x = "Share of business owners", y = NULL) +
+  theme_thesis_h()
+```
+
+::: {.notes}
+*Notes:* This figure shows the composition of the restricted owner income sample of @tbl-b2-main by origin group, in HILDA waves 1 to 21. Panel (a) shows the number of person-pairs by year. Panel (b) shows the share of owners (with and without employees) in each industry who belong to each origin group, with industries ordered by the total migrant share. Both panels are unweighted. The rise in 2011 reflects the general top-up of the HILDA sample in that year.
+:::
+
+```{r}
+#| label: tbl-b2-cells
+#| tbl-cap: "Sample cells, raw outcomes and attrition by ownership status, business size and origin group."
+#| echo: false
+
+owner_type_labels <- c(
+  employee_small = "Employees, small workplace",
+  employee_large = "Employees, large workplace",
+  employer_small = "Small employers",
+  employer_large = "Large employers",
+  own_account = "Own-account workers"
+)
+origin_labels <- c(
+  native = "Native-born",
+  mes = "MES",
+  mnes_higheng = "MNES high-English",
+  mnes_loweng = "MNES low-English"
+)
+pct <- \(x) ifelse(is.na(x), "", formatC(100 * x, format = "f", digits = 1))
+
+b2_cells <- cells_b2 |>
+  dplyr::left_join(
+    attrition_b2 |> dplyr::select(owner_type, origin_group, share_not_interviewed),
+    by = c("owner_type", "origin_group")
+  ) |>
+  dplyr::mutate(owner_type = factor(owner_type, levels = names(owner_type_labels))) |>
+  dplyr::arrange(owner_type, origin_group)
+
+b2_cells_display <- b2_cells |>
+  dplyr::transmute(
+    Group = origin_labels[as.character(origin_group)],
+    Individuals = fmt_int(individuals),
+    `Person-pairs` = fmt_int(person_pairs),
+    `Mean income` = fmt_int(round(mean_income)),
+    `Median income` = fmt_int(round(median_income)),
+    `Volatility` = formatC(mean_volatility, format = "f", digits = 1),
+    `Large fall (%)` = pct(share_large_fall),
+    `Not re-interviewed (%)` = pct(share_not_interviewed)
+  )
+
+cell_groups <- b2_cells |>
+  dplyr::mutate(row = dplyr::row_number()) |>
+  dplyr::summarise(start = min(row), .by = owner_type)
+
+tinytable::tt(b2_cells_display) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(i = as.list(setNames(
+    cell_groups$start, owner_type_labels[as.character(cell_groups$owner_type)]
+  ))) |>
+  tinytable::style_tt(i = 0, line = "tb") |>
+  tinytable::style_tt(i = nrow(b2_cells_display) + nrow(cell_groups), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:8, align = "c")
+```
+
+::: {.notes}
+*Notes:* This table reports the number of individuals and person-pairs, raw outcomes and attrition by employment status, business size and origin group, in the restricted sample of individuals with the same status at $t-1$ and $t$. Income is annual labour and business income in dollars, volatility is the mean absolute arc per cent change of @eq-volatility and a large fall is a fall in income of 25 per cent or more. *Not re-interviewed (%)* is the percentage of individuals at $t-1$ who are not interviewed at $t$, before any other sample restriction; these individuals drop out of both samples. Large employers with low English proficiency are omitted, since only one is observed. All figures are unweighted.
+:::
+
+```{r}
+#| label: tbl-b2-large
+#| tbl-cap: "Income and risk of large employers relative to employees of the same origin."
+#| echo: false
+
+b2_other_columns <- list(
+  "Income (dollars)" = list(outcome = "income_t", sample = "unrestricted"),
+  "Volatility (pp)" = list(outcome = "abs_arc_pct", sample = "unrestricted"),
+  "Large fall (pp)" = list(outcome = "large_fall", sample = "unrestricted"),
+  "Income (dollars) " = list(outcome = "income_t", sample = "restricted"),
+  "Volatility (pp) " = list(outcome = "abs_arc_pct", sample = "restricted"),
+  "Large fall (pp) " = list(outcome = "large_fall", sample = "restricted")
+)
+x <- b2_panels(contrasts_b2, "owner_emp_large", b2_other_columns)
+
+dplyr::bind_rows(x$gap, x$diff, x$mde, b2_footer_rows(b2_other_columns)) |>
+  dplyr::mutate(n_owners = dplyr::if_else(dplyr::row_number() <= 8, n_owners, "")) |>
+  dplyr::rename("Dependent variable:" = Group, "Large employers (restricted sample)" = n_owners) |>
+  tinytable::tt(width = c(0.16, rep(0.11, 6), 0.10)) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    i = list(
+      "Panel A: Owner\u2013employee gap" = 1,
+      "Panel B: Difference from the native-born owner\u2013employee gap" = 9,
+      "Panel C: Minimum detectable difference" = 15
+    ),
+    j = list(
+      "Unrestricted sample: status at t" = 2:4,
+      "Restricted sample: same status at t\u22121 and t" = 5:7
+    )
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, line = "b") |>
+  tinytable::style_tt(i = c(1, 10, 17), italic = TRUE) |>
+  tinytable::style_tt(i = c(20, 22), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:8, align = "c") |>
+  pair_se_rows(c(1, 9, 15))
+```
+
+::: {.notes}
+*Notes:* This table reports the owner–employee gap for large employers (owners with employees and 20 or more people at their workplace), relative to employees of large workplaces of the same origin, from the regressions of @eq-owner-inc in @tbl-b2-main. Panel A reports the gap, $\theta_L$ for the native-born and $\theta_L + \theta_{Lg}$ for migrant group $g$. Panel B reports the difference from the native-born gap, $\theta_{Lg}$, and Panel C its minimum detectable difference, $2.8 \times \text{SE}(\theta_{Lg})$. The dependent variables are income in dollars, and volatility and large falls in percentage points. Each column represents a separate regression on the unrestricted or restricted sample, with the covariates and fixed effects of @tbl-b2-main. The last column is the number of distinct large employers in the restricted income regression. A dash marks the single low-English large employer, who is excluded from estimation. All standard errors reported in parentheses are clustered at the individual and industry-year levels. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: tbl-b2-ownacc
+#| tbl-cap: "Income and risk of own-account workers relative to employees of the same origin."
+#| echo: false
+
+b2_other_columns <- list(
+  "Income (dollars)" = list(outcome = "income_t", sample = "unrestricted"),
+  "Volatility (pp)" = list(outcome = "abs_arc_pct", sample = "unrestricted"),
+  "Large fall (pp)" = list(outcome = "large_fall", sample = "unrestricted"),
+  "Income (dollars) " = list(outcome = "income_t", sample = "restricted"),
+  "Volatility (pp) " = list(outcome = "abs_arc_pct", sample = "restricted"),
+  "Large fall (pp) " = list(outcome = "large_fall", sample = "restricted")
+)
+x <- b2_panels(contrasts_b2, "own_acc", b2_other_columns)
+
+dplyr::bind_rows(x$gap, x$diff, x$mde, b2_footer_rows(b2_other_columns)) |>
+  dplyr::mutate(n_owners = dplyr::if_else(dplyr::row_number() <= 8, n_owners, "")) |>
+  dplyr::rename("Dependent variable:" = Group, "Own-account workers (restricted sample)" = n_owners) |>
+  tinytable::tt(width = c(0.16, rep(0.11, 6), 0.10)) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    i = list(
+      "Panel A: Owner\u2013employee gap" = 1,
+      "Panel B: Difference from the native-born owner\u2013employee gap" = 9,
+      "Panel C: Minimum detectable difference" = 15
+    ),
+    j = list(
+      "Unrestricted sample: status at t" = 2:4,
+      "Restricted sample: same status at t\u22121 and t" = 5:7
+    )
+  ) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, line = "b") |>
+  tinytable::style_tt(i = c(1, 10, 17), italic = TRUE) |>
+  tinytable::style_tt(i = c(20, 22), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:8, align = "c") |>
+  pair_se_rows(c(1, 9, 15))
+```
+
+::: {.notes}
+*Notes:* This table reports the owner–employee gap for own-account workers (self-employed, or owners without employees, in small workplaces), relative to employees of small workplaces of the same origin, from the regressions of @eq-owner-inc in @tbl-b2-main. Panel A reports the gap, $\theta_O$ for the native-born and $\theta_O + \theta_{Og}$ for migrant group $g$. Panel B reports the difference from the native-born gap, $\theta_{Og}$, and Panel C its minimum detectable difference, $2.8 \times \text{SE}(\theta_{Og})$. The dependent variables are income in dollars, and volatility and large falls in percentage points. Each column represents a separate regression on the unrestricted or restricted sample, with the covariates and fixed effects of @tbl-b2-main. The last column is the number of distinct own-account workers in the restricted income regression. All standard errors reported in parentheses are clustered at the individual and industry-year levels. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: tbl-b2-appendix
+#| tbl-cap: "Income level, volatility and downside risk by ownership status, business size and origin group (full estimation results)."
+#| echo: false
+fmt_int <- function(x) formatC(x, format = "d", big.mark = ",")
+fmt_num <- function(x, d) formatC(x, format = "f", digits = d)
+
+# Whole dollars for the income level, three decimals for the other outcomes
+fmt_mixed <- \(x) ifelse(
+  abs(x) >= 100,
+  formatC(x, format = "f", digits = 0, big.mark = ","),
+  formatC(x, format = "f", digits = 3)
+)
+
+origin_label <- c(mes = "MES", mnes_higheng = "MNES high-English", mnes_loweng = "MNES low-English")
+owner_label <- c(
+  owner_emp_small = "Small employer",
+  owner_emp_large = "Large employer",
+  own_acc = "Own-account worker"
+)
+
+b2_groups <- list(
+  "Ownership and origin" = c(
+    owner_label,
+    setNames(origin_label, paste0("origin_group::", names(origin_label))),
+    unlist(purrr::map(names(owner_label), \(o) setNames(
+      paste(origin_label, "x", owner_label[[o]]),
+      paste0("origin_group::", names(origin_label), ":", o)
+    )))
+  ),
+  "Demographics" = c(
+    "age_hgage" = "Age",
+    "I(I(age_hgage^2))" = "Age squared",
+    "sex_hgsexfemale" = "Female",
+    "marital_status_mrcurrde facto" = "De facto",
+    "marital_status_mrcurrseparated" = "Separated",
+    "marital_status_mrcurrdivorced" = "Divorced",
+    "marital_status_mrcurrwidowed" = "Widowed",
+    "marital_status_mrcurrnever married and not de facto" = "Never married"
+  ),
+  "Education (reference: year 11 and below)" = c(
+    "highest_education_achieved_edhigh1postgrad (master or doctorate)" = "Postgraduate",
+    "highest_education_achieved_edhigh1grad diploma, grad certificate" = "Graduate diploma or certificate",
+    "highest_education_achieved_edhigh1bachelor or honours" = "Bachelor or honours",
+    "highest_education_achieved_edhigh1adv diploma, diploma" = "Advanced diploma or diploma",
+    "highest_education_achieved_edhigh1certificate iii or iv" = "Certificate III or IV",
+    "highest_education_achieved_edhigh1year 12" = "Year 12"
+  ),
+  "Location and job characteristics" = c(
+    "remoteness_hhs3rainner regional australia" = "Inner regional",
+    "remoteness_hhs3raouter regional australia" = "Outer regional",
+    "remoteness_hhs3raremote australia" = "Remote",
+    "remoteness_hhs3ravery remote australia" = "Very remote",
+    "seifa_decile" = "SEIFA disadvantage decile (1 = most disadvantaged)",
+    "tenure_occ_pair" = "Occupational tenure (years)",
+    "firm_type_pair::small_single_site" = "Small single-site workplace",
+    "firm_type_pair::small_site_chain" = "Small site of multi-site employer",
+    "firm_type_pair::chain_like" = "Chain-like workplace"
+  ),
+  "Prior income decile (reference: decile 5)" = c(
+    setNames(
+      paste0("Decile ", c(1:4, 6:10), c(" (lowest)", rep("", 3), rep("", 4), " (highest)")),
+      paste0("prior_income_decile::", c(1:4, 6:10))
+    ),
+    "prior_income_decile::none" = "Fewer than two prior waves"
+  )
+)
+
+b2_models_full <- list(
+  "Income (dollars)" = regression2_income_unrestricted,
+  "Volatility (pp)" = regression2_volatility_unrestricted,
+  "Large fall (share)" = regression2_large_fall_unrestricted,
+  "Income (dollars) " = regression2_income,
+  "Volatility (pp) " = regression2_volatility,
+  "Large fall (share) " = regression2_large_fall
+)
+
+# Keep only rows that some model estimates, so the group positions are right
+terms_present <- unique(unlist(lapply(b2_models_full, \(m) names(coef(m)))))
+b2_groups <- lapply(b2_groups, \(g) g[names(g) %in% terms_present])
+b2_groups <- b2_groups[lengths(b2_groups) > 0]
+
+coef_b2_full <- do.call(c, unname(b2_groups))
+n_rows_group <- sapply(b2_groups, \(g) length(unique(g)))
+n_groups <- length(b2_groups)
+n_coef <- 2 * sum(n_rows_group)
+group_rows <- as.list(setNames(
+  1 + 2 * c(0, cumsum(n_rows_group)[-n_groups]),
+  names(b2_groups)
+))
+
+# Joint tests in column order: unrestricted then restricted, income, volatility, large fall
+jt_order <- tidyr::expand_grid(sample = c("unrestricted", "restricted"), outcome = c("income_t", "abs_arc_pct", "large_fall")) |>
+  dplyr::left_join(joint_tests, by = c("sample", "outcome"))
+jt_df <- paste0(fmt_num(jt_order$F_stat, 2), " (", jt_order$df1, ", ", fmt_int(jt_order$df2), ")")
+jt_pv <- fmt_num(jt_order$p.value, 3)
+
+n_individuals <- \(m, d) fmt_int(dplyr::n_distinct(d$xwaveid[fixest::obs(m)]))
+
+b2_data_full <- rep(list(data_regression_2_unrestricted, data_regression_2_pairs), each = 3)
+b2_rows <- tibble::tibble(
+  term = c("Sample", "Same status at t−1 required", "Year FEs", "Industry-year FEs", "State-year FEs",
+           "F-test (df)", "F-test (p-value)", "Individuals"),
+  !!!setNames(lapply(seq_along(b2_models_full), \(k) c(
+    if (k <= 3) "Unrestricted" else "Restricted",
+    if (k <= 3) "No" else "Yes",
+    "Yes", "Yes", "Yes",
+    jt_df[k], jt_pv[k],
+    n_individuals(b2_models_full[[k]], b2_data_full[[k]])
+  )), names(b2_models_full))
+)
+attr(b2_rows, "position") <- n_coef + 1:8
+
+modelsummary::modelsummary(
+  b2_models_full,
+  coef_map = coef_b2_full,
+  gof_map = gof_comma(tibble::tribble(
+    ~raw,        ~clean,         ~fmt,
+    "nobs",      "Observations (person-pairs)", 0,
+    "r.squared", "R-squared",    3
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = fmt_mixed,
+  add_rows = b2_rows,
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(i = group_rows, j = list("Unrestricted sample: status at t" = 2:4, "Restricted sample: same status at t−1 and t" = 5:7)) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, line = "b") |>
+  tinytable::style_tt(i = n_coef + n_groups, line = "b") |>
+  tinytable::style_tt(i = n_coef + n_groups + 8 + 2, line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:7, align = "c") |>
+  pair_se_rows(unlist(group_rows))
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of @eq-owner-inc. These are the full results of @tbl-b2-main and @tbl-b2-premium. The dependent variables are annual labour and business income at $t$ in dollars, income volatility (the absolute arc per cent change of @eq-volatility, 0 to 200) and an indicator for an income fall of 25 per cent or more, in shares (0.145 is 14.5 percentage points). Each column represents a separate regression; the first three use the unrestricted sample, which classifies individuals by their status at $t$, and the last three the restricted sample of individuals with the same status at $t-1$ and $t$. The owner-type rows are $\theta_S$, $\theta_L$ and $\theta_O$, the origin rows are $\gamma_g$ and the interaction rows are $\theta_{Sg}$, $\theta_{Lg}$ and $\theta_{Og}$; the owner–employee gap of group $g$ in @tbl-b2-main is the owner-type row plus the interaction row. All columns include year, industry-year and state-year fixed effects; the volatility and large-fall columns also include the prior income decile, which ranks average income over waves $t-5$ to $t-2$, with a separate category for individuals with fewer than two waves observed. The reference categories are native-born employees, decile 5 and Year 11 or below. The single low-English large employer is excluded, so that interaction is not estimated. The F-test, with its degrees of freedom in parentheses and its p-value in the row below, tests the null hypothesis that all origin by owner-type interactions are jointly zero, using the clustered covariance matrix. All standard errors reported in parentheses are clustered at the individual and industry-year levels. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: fig-b2-arc-density
+#| fig-cap: "Distribution of year-to-year income changes by ownership status and origin group."
+#| fig-subcap:
+#|   - "Employees."
+#|   - "Owners with employees."
+#|   - "Own-account workers."
+#| layout-ncol: 3
+#| echo: false
+#| fig-width: 5
+#| fig-height: 4
+#| fig-dpi: 300
+
+status_pair_of <- c(
+  employee    = "stay_employee",
+  employer    = "stay_employer",
+  own_account = "stay_own_account"
+)
+
+plot_arc_density <- function(s) {
+  data_regression_2_pairs |>
+    filter(status_pair == status_pair_of[[s]]) |>
+    mutate(
+      arc_pct = 100 * arc,
+      origin_group = factor(group_labels[as.character(origin_group)], levels = group_labels)
+    ) |>
+    ggplot(aes(x = arc_pct, colour = origin_group, linetype = origin_group)) +
+    geom_density(adjust = 1.5, linewidth = 0.5) +
+    scale_colour_origin() +
+    scale_linetype_origin() +
+    coord_cartesian(xlim = c(-200, 200)) +
+    scale_x_continuous(breaks = seq(-200, 200, 100)) +
+    labs(x = "Arc percent change in income, t-1 to t", y = "Density") +
+    theme_thesis() +
+    guides(colour = guide_legend(nrow = 2), linetype = guide_legend(nrow = 2))
+}
+
+for (s in names(status_labels)) print(plot_arc_density(s))
+```
+
+::: {.notes}
+*Notes:* This figure plots kernel densities of the arc per cent change in annual labour and business income between consecutive waves, which ranges from −200 to 200, by origin group, in the restricted sample of @tbl-b2-main. Values of ±200 arise when income moves to or from zero or changes sign, and the concentration at zero reflects identical incomes reported in consecutive years. Densities for low-English owners rest on few observations.
+:::
+
+## Entry into Business Ownership {#sec-appendix-b3}
+
+This section reports unconditional entry rates, the full estimates behind @tbl-b3-main and the robustness checks discussed in @sec-results-block3.
+
+```{r}
+#| label: tbl-b3-sample
+#| tbl-cap: "Transitions into business ownership by migrant and language proficiency group."
+#| echo: false
+
+# Variables for the standardisation: age bands and industry of most recent
+# job at t-1 (the 19 ANZSIC divisions, i.e. 1-digit industry)
+sample_b3 <- data_regression_3 |>
+  mutate(
+    age_band = cut(
+      age_hgage,
+      breaks = c(-Inf, 24, 34, 44, 54, 64, Inf),
+      labels = c("15-24", "25-34", "35-44", "45-54", "55-64", "65+")
+    ),
+    industry_1d = industry_19categories_jbmi61_fe
+  )
+
+# Entry counts by origin group
+entry_counts <- sample_b3 |>
+  summarise(
+    n_atrisk = n(),
+    n_entries = sum(entry_owner == 1),
+    .by = origin_group
+  )
+
+baseline <- entry_counts |> filter(origin_group == "native")
+
+# Fisher exact test against the Australian-born baseline
+entry_tests <- entry_counts |>
+  mutate(
+    rate = 100 * n_entries / n_atrisk,
+    p_fisher = purrr::map2_dbl(
+      n_entries,
+      n_atrisk,
+      ~ if (.y == baseline$n_atrisk) {
+        NA_real_
+      } else {
+        fisher.test(matrix(
+          c(
+            .x,
+            .y - .x,
+            baseline$n_entries,
+            baseline$n_atrisk - baseline$n_entries
+          ),
+          nrow = 2,
+          byrow = TRUE
+        ))$p.value
+      }
+    )
+  )
+
+# Homogeneity test across all four groups
+chisq_b3 <- chisq.test(
+  cbind(entry_counts$n_entries, entry_counts$n_atrisk - entry_counts$n_entries)
+)
+
+# Person-clustered bootstrap CI for each group's entry rate
+# (resamples individuals, so repeated waves of the same person are respected)
+boot_entry_ci <- function(dat, group, R = 2000, seed = 1) {
+  set.seed(seed)
+  per_person <- dat |>
+    filter(origin_group == group) |>
+    summarise(waves = n(), entries = sum(entry_owner == 1), .by = xwaveid)
+  n_id <- nrow(per_person)
+  rates <- replicate(R, {
+    i <- sample.int(n_id, n_id, replace = TRUE)
+    100 * sum(per_person$entries[i]) / sum(per_person$waves[i])
+  })
+  tibble::tibble(
+    lo = quantile(rates, 0.025),
+    hi = quantile(rates, 0.975)
+  )
+}
+
+entry_ci <- entry_counts |>
+  mutate(
+    ci = purrr::map(as.character(origin_group), \(g) {
+      boot_entry_ci(sample_b3, g)
+    })
+  ) |>
+  tidyr::unnest(ci) |>
+  select(origin_group, lo, hi)
+
+# Entry rate standardised to the Australian-born age and industry mix. A logit
+# of entry on origin, age band and industry is used, rather than cell-by-cell
+# rates, because many origin x age x industry cells hold one or two people.
+# Each group's standardised rate is its average predicted entry rate over the
+# Australian-born person-pairs.
+std_model <- glm(
+  entry_owner ~ origin_group + age_band + industry_1d,
+  family = binomial(), data = sample_b3
+)
+native_pairs <- filter(sample_b3, origin_group == "native")
+standardised <- tibble::tibble(
+  origin_group = factor(levels(sample_b3$origin_group), levels = levels(sample_b3$origin_group)),
+  standardised_rate = vapply(levels(sample_b3$origin_group), \(g) {
+    nd <- dplyr::mutate(native_pairs, origin_group = factor(g, levels = levels(sample_b3$origin_group)))
+    100 * mean(predict(std_model, newdata = nd, type = "response"))
+  }, numeric(1))
+)
+
+# Assemble the table
+b3_group_labels <- c(
+  native = "Australian-born",
+  mes = "Migrant, main English-speaking country",
+  mnes_higheng = "Migrant, other country, high English",
+  mnes_loweng = "Migrant, other country, low English"
+)
+
+entry_tests |>
+  left_join(entry_ci, by = "origin_group") |>
+  left_join(standardised, by = "origin_group") |>
+  mutate(origin_group = factor(origin_group, levels = names(b3_group_labels))) |>
+  arrange(origin_group) |>
+  transmute(
+    Group = b3_group_labels[as.character(origin_group)],
+    `At-risk person-pairs` = format(n_atrisk, big.mark = ","),
+    Entries = format(n_entries, big.mark = ","),
+    `Entry rate (%)` = sprintf("%.2f", rate),
+    `95% CI` = sprintf("[%.2f, %.2f]", lo, hi),
+    `p vs Australian-born` = if_else(
+      is.na(p_fisher),
+      "",
+      fmt_p(p_fisher)
+    ),
+    `Standardised rate (%)` = sprintf("%.2f", standardised_rate)
+  ) |>
+  tinytable::tt() |>
+  tinytable::theme_empty() |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:7, align = "c") |>
+  tinytable::style_tt(i = 0, line = "tb") |>
+  tinytable::style_tt(i = 4, line = "b")
+```
+
+::: {.notes}
+*Notes:* This table reports unconditional entry into business ownership in the transition sample, by origin group. The entry rate is the percentage of at-risk person-pairs (not a business owner at $t-1$) in which the individual owns a business at $t$. The 95% confidence interval is from a bootstrap that resamples individuals (2,000 replications). *p vs Australian-born* is from a Fisher exact test; a chi-square test of equal rates across all groups gives p `r fmt_p_eq(chisq_b3$p.value)`. *Standardised rate* is the entry rate each group would have with the Australian-born mix of age band and industry of most recent job at $t-1$, computed as each group's average predicted entry rate over the Australian-born person-pairs from a logit of entry on origin group, age band and industry.
+:::
+
+```{r}
+#| label: tbl-b3-full
+#| tbl-cap: "Full estimation results for entry into business ownership between t−1 and $t$."
+#| echo: false
+
+models3_full <- list(
+  "Origin only" = regression3_v1a,
+  "Labour market only" = regression3_v2a,
+  "Origin and labour market" = regression3_v3a,
+  "Adding human capital" = regression3_v4a
+)
+
+# --- Coefficient labels, by panel ---------------------------------------------
+
+# cm3_origin, cm3_labour, cm3_human, cm3_demog and cm3_house are in thesis_format.R
+cm3_panels <- list(
+  "Origin and English proficiency" = cm3_origin,
+  "Labour-market position at t−1" = cm3_labour,
+  "Human capital and job attributes at t−1" = cm3_human,
+  "Demographics" = cm3_demog,
+  "Household and location at t−1" = cm3_house
+)
+# Coefficient map and row positions of the panel headers and rules
+b3_full_layout <- full_coef_layout(models3_full, cm3_panels)
+
+# --- Wald tests: weak labour-market outcomes jointly zero ---------------------
+
+push_wald <- function(m) {
+  w <- wald_chisq(m, c("unemployed_l1", "nilf_l1", "low_wage_l1", "liquidity_l1"))
+  sprintf("%.2f (%s)", w$stat, fmt_p(w$p))
+}
+
+# --- Individuals per model ----------------------------------------------------
+
+n_ind <- function(m) {
+  format(n_distinct(data_regression_3$xwaveid[fixest::obs(m)]), big.mark = ",")
+}
+
+rows3_full <- tibble::tribble(
+  ~term,               ~`Origin only`,                      ~`Labour market only`,                      ~`Origin and labour market`,                      ~`Adding human capital`,
+  "Individuals",       n_ind(regression3_v1a),      n_ind(regression3_v2a),      n_ind(regression3_v3a),      n_ind(regression3_v4a),
+  "Year FEs",          "Yes",                       "Yes",                       "Yes",                       "Yes",
+  "Industry-year FEs", "Yes",                       "Yes",                       "Yes",                       "Yes",
+  "State-year FEs",    "Yes",                       "Yes",                       "Yes",                       "Yes",
+  "Wald χ² (p-value)", "",
+                       push_wald(regression3_v2a),
+                       push_wald(regression3_v3a),
+                       push_wald(regression3_v4a)
+)
+
+n_gof <- 3
+last_row <- b3_full_layout$coef_end + n_gof + nrow(rows3_full)
+
+# --- Table ----------------------------------------------------------------------
+
+modelsummary::modelsummary(
+  models3_full,
+  coef_map = b3_full_layout$map,
+  gof_map = gof_comma(tibble::tribble(
+    ~raw,   ~clean,         ~fmt,
+    "nobs", "Observations (person-pairs)", 0,
+    "aic",  "AIC",          0,
+    "bic",  "BIC",          0
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  add_rows = rows3_full,
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: entry into business ownership (logit)" = 2:5),
+    i = b3_full_layout$groups) |>
+  tinytable::style_tt(i = b3_full_layout$headers, italic = TRUE) |>
+  tinytable::style_tt(i = c(0, b3_full_layout$coef_end, last_row), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:5, align = "c") |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  pair_se_rows(b3_full_layout$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports logit estimates of @eq-transition. These are the full results of @tbl-b3-main. The dependent variable equals one if an individual who is not a business owner at $t-1$ is an own-account worker or employer at $t$. Each column adds regressors in steps, starting with origin group only, then labour-market position and liquidity at $t-1$ only, then both and finally both with education and employer tenure at $t-1$. All columns include year, industry-year and state-year fixed effects. Coefficients are log-odds. Reference categories are the Australian-born, employees who were not low-paid and not liquidity constrained at $t-1$, Year 11 or below as highest education, male, married, not a homeowner and living in a major city. The Wald χ² statistic, with its p-value in parentheses, tests the null hypothesis that the four labour-market and liquidity coefficients are jointly zero. All standard errors reported in parentheses are clustered at the individual level. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: tbl-b3-robust
+#| tbl-cap: "Timing of labour market status and within-person estimates of entry into business ownership (logit coefficients)."
+#| echo: false
+
+b3_origins <- c(mes = "MES", mnes_higheng = "MNES high English", mnes_loweng = "MNES low English")
+b3_push <- function(lag) c(
+  setNames(paste0(c("Unemployed", "Bottom wage quintile"), " at t−", lag, ""), paste0(c("unemployed_l", "low_wage_l"), lag)),
+  unlist(lapply(c("unemployed", "low_wage"), \(p) setNames(
+    paste0(b3_origins, " x ", if (p == "unemployed") "Unemployed" else "Bottom wage quintile", " at t−", lag, ""),
+    paste0("origin_group", names(b3_origins), ":", p, "_l", lag)
+  )))
+)
+
+b3_robust_models <- list(
+  "Status at t−1" = regression3_timing_l1,
+  "Status at t−2" = regression3_timing_l2,
+  "Status at t−1 and t−2" = regression3_timing_both,
+  "With person means" = regression3_mundlak
+)
+# Full results, with every coefficient grouped into panels
+b3_robust_layout <- full_coef_layout(b3_robust_models, list(
+  "Push from the labour market, by origin" = c(b3_push(1), b3_push(2)),
+  "Origin and English proficiency" = cm3_origin,
+  "Other labour-market position" = c(
+    "nilf_l1" = "Not in labour force at t−1",
+    "nilf_l2" = "Not in labour force at t−2",
+    "liquidity_l1" = "Liquidity constrained at t−1",
+    "liquidity_l2" = "Liquidity constrained at t−2",
+    "liquidity_miss_l1" = "Liquidity measure missing at t−1",
+    "liquidity_miss_l2" = "Liquidity measure missing at t−2"
+  ),
+  "Person means" = c(
+    "unemployed_l1_mean" = "Person mean of unemployment",
+    "low_wage_l1_mean" = "Person mean of bottom wage quintile",
+    "nilf_l1_mean" = "Person mean of not in labour force",
+    "liquidity_l1_mean" = "Person mean of liquidity constraint",
+    "homeowner_l1_mean" = "Person mean of homeownership",
+    "seifa_decile_l1_mean" = "Person mean of SEIFA decile"
+  ),
+  "Human capital and job attributes at t−1" = cm3_human,
+  "Demographics" = cm3_demog,
+  "Household and location at t−1" = cm3_house
+))
+b3_joint_p <- \(m) fmt_p(fixest::wald(m, keep = ":(unemployed|low_wage)_l[12]$", print = FALSE)$p)
+
+modelsummary::modelsummary(
+  b3_robust_models,
+  coef_map = b3_robust_layout$map,
+  gof_map = gof_comma(tribble(
+    ~raw,   ~clean,         ~fmt,
+    "nobs", "Observations (person-pairs)", 0
+  )),
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = tibble::tibble(
+    term = c("Individuals", "Labour market status measured at", "Sample", "Joint test of interactions (p-value)"),
+    `Status at t−1` = c(fmt_int(n_individuals_model(regression3_timing_l1)), "t−1", "Observed at t−2", b3_joint_p(regression3_timing_l1)),
+    `Status at t−2` = c(fmt_int(n_individuals_model(regression3_timing_l2)), "t−2", "Observed at t−2", b3_joint_p(regression3_timing_l2)),
+    `Status at t−1 and t−2` = c(fmt_int(n_individuals_model(regression3_timing_both)), "t−1 and t−2", "Observed at t−2", b3_joint_p(regression3_timing_both)),
+    `With person means` = c(fmt_int(n_individuals_model(regression3_mundlak)), "t−1, with person means", "Full", b3_joint_p(regression3_mundlak))
+  ),
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: entry into business ownership (logit)" = 2:5),
+    i = b3_robust_layout$groups
+  ) |>
+  tinytable::style_tt(i = b3_robust_layout$headers, italic = TRUE) |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  tinytable::style_tt(i = 0, line = "b") |>
+  # Coefficient rows, then 1 fit row and 4 added rows
+  tinytable::style_tt(i = b3_robust_layout$coef_end + c(0, 5), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:5, align = "c") |>
+  pair_se_rows(b3_robust_layout$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports logit estimates of @eq-transition-het with labour market status measured at different times. The dependent variable equals one if an individual who is not a business owner at $t-1$ is an own-account worker or employer at $t$. The first three columns use the person-pairs whose labour market status is also observed two years before entry, so that differences between them reflect timing and not sample composition, and measure unemployment and low wages at $t-1$, at $t-2$ and at both. *With person means* uses the full transition sample and adds each individual's mean of the time-varying regressors, so that the $t-1$ coefficients compare an individual with themselves at other times [@mundlak_pooling_1978]. All columns include the covariates of @tbl-b3-het and year, industry-year and state-year fixed effects. Coefficients are log-odds, with reference categories as in @tbl-b3-full. The joint test reports the p-value of a Wald test of the null hypothesis that all origin by labour-market interactions in the column are jointly zero. All standard errors reported in parentheses are clustered at the individual level. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: tbl-b3-lpm
+#| tbl-cap: "Linear probability models of entry into business ownership (percentage points)."
+#| echo: false
+
+b3_lpm_models <- list(
+  "Origin only" = regression3_lpm_v1,
+  "Labour market only" = regression3_lpm_v2,
+  "Origin and labour market" = regression3_lpm_v3,
+  "Adding human capital" = regression3_lpm_v4,
+  "Origin × push" = regression3_lpm_het,
+  "Origin × push, individual FEs" = regression3_lpm_het_fe
+)
+
+# The individual fixed-effects model names its interactions with fixest's i()
+# ("origin_group::mes:unemployed_l1"), so both spellings map to the same row
+b3_lpm_inter <- function(g, label) {
+  out <- character()
+  for (p in c("unemployed_l1", "low_wage_l1")) {
+    lab <- paste0(label, " × ", if (p == "unemployed_l1") "Unemployed" else "Bottom wage quintile")
+    out[paste0("origin_group", g, ":", p)] <- lab
+    out[paste0("origin_group::", g, ":", p)] <- lab
+  }
+  out
+}
+cm3_lpm <- c(
+  "origin_groupmes" = "MES",
+  "origin_groupmnes_higheng" = "MNES high English",
+  "origin_groupmnes_loweng" = "MNES low English",
+  "unemployed_l1" = "Unemployed",
+  "nilf_l1" = "Not in labour force",
+  "low_wage_l1" = "Bottom wage quintile",
+  "liquidity_l1" = "Liquidity constrained",
+  b3_lpm_inter("mes", "MES"),
+  b3_lpm_inter("mnes_higheng", "MNES high English"),
+  b3_lpm_inter("mnes_loweng", "MNES low English")
+)
+# Interaction rows ordered by push, then group, as in @tbl-b3-robust
+b3_lpm_inter_all <- cm3_lpm[grepl(":", names(cm3_lpm))]
+b3_lpm_inter_all <- b3_lpm_inter_all[order(!grepl("unemployed_l1$", names(b3_lpm_inter_all)))]
+
+# Full results, with every coefficient grouped into panels
+b3_lpm_layout <- full_coef_layout(b3_lpm_models, list(
+  "Origin and English proficiency" = cm3_origin,
+  "Labour-market position at t−1" = cm3_labour,
+  "Origin × labour-market position at t−1" = b3_lpm_inter_all,
+  "Human capital and job attributes at t−1" = cm3_human,
+  "Demographics" = cm3_demog,
+  "Household and location at t−1" = cm3_house
+))
+
+b3_lpm_joint_p <- \(m) fmt_p(fixest::wald(m, keep = ":(unemployed|low_wage)_l1$", print = FALSE)$p)
+b3_lpm_mean <- \(m) sprintf("%.2f", mean(fitted(m) + resid(m)))
+
+b3_lpm_n <- \(m) fmt_int(nobs(m))
+
+b3_lpm_rows <- tibble::tibble(
+  term = c("Observations (person-pairs)", "Individuals", "Mean entry rate (%)", "Year, industry-year and state-year FEs",
+           "Individual FEs", "Joint test of interactions (p-value)"),
+  `Origin only` = c(b3_lpm_n(regression3_lpm_v1), fmt_int(n_individuals_model(regression3_lpm_v1)), b3_lpm_mean(regression3_lpm_v1), "Yes", "No", ""),
+  `Labour market only` = c(b3_lpm_n(regression3_lpm_v2), fmt_int(n_individuals_model(regression3_lpm_v2)), b3_lpm_mean(regression3_lpm_v2), "Yes", "No", ""),
+  `Origin and labour market` = c(b3_lpm_n(regression3_lpm_v3), fmt_int(n_individuals_model(regression3_lpm_v3)), b3_lpm_mean(regression3_lpm_v3), "Yes", "No", ""),
+  `Adding human capital` = c(b3_lpm_n(regression3_lpm_v4), fmt_int(n_individuals_model(regression3_lpm_v4)), b3_lpm_mean(regression3_lpm_v4), "Yes", "No", ""),
+  `Origin × push` = c(b3_lpm_n(regression3_lpm_het), fmt_int(n_individuals_model(regression3_lpm_het)), b3_lpm_mean(regression3_lpm_het), "Yes", "No", b3_lpm_joint_p(regression3_lpm_het)),
+  `Origin × push, individual FEs` = c(b3_lpm_n(regression3_lpm_het_fe), fmt_int(n_individuals_model(regression3_lpm_het_fe)), b3_lpm_mean(regression3_lpm_het_fe), "Yes", "Yes", b3_lpm_joint_p(regression3_lpm_het_fe))
+)
+
+# Coefficient rows (with their panel headers), then the added rows
+b3_lpm_last_coef <- b3_lpm_layout$coef_end
+b3_lpm_last_row <- b3_lpm_last_coef + nrow(b3_lpm_rows)
+
+modelsummary::modelsummary(
+  b3_lpm_models,
+  coef_map = b3_lpm_layout$map,
+  gof_map = NA,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  stars = thesis_stars,
+  fmt = modelsummary::fmt_decimal(digits = 3, big.mark = ","),
+  add_rows = b3_lpm_rows,
+  # A wide label column, so the interaction labels do not wrap onto three lines
+  width = c(0.26, rep(0.11, 6)),
+  output = "tinytable"
+) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(
+    j = list("Dependent variable: entry into business ownership × 100 (OLS)" = 2:7),
+    i = b3_lpm_layout$groups
+  ) |>
+  tinytable::style_tt(i = b3_lpm_layout$headers, italic = TRUE) |>
+  tinytable::style_tt(i = c(0, b3_lpm_last_coef, b3_lpm_last_row), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:7, align = "c") |>
+  tinytable::style_tt(i = -1, line = "t") |>
+  pair_se_rows(b3_lpm_layout$starts)
+```
+
+::: {.notes}
+*Notes:* This table reports OLS estimates of linear probability versions of @eq-transition (first four columns) and @eq-transition-het (last two columns), on the same person-pairs as the logits in @tbl-b3-main and @tbl-b3-het. The dependent variable is 100 times the entry indicator, so each coefficient is a change in the annual probability of entry in percentage points. Each column matches the corresponding logit specification; the last column adds individual fixed effects, which absorb the origin groups, and drops individuals observed in only one person-pair. All columns include the covariates of the corresponding logit and year, industry-year and state-year fixed effects, with reference categories as in @tbl-b3-full. The joint test reports the p-value of a Wald test of the null hypothesis that the six origin by labour-market interactions are jointly zero. All standard errors reported in parentheses are clustered at the individual level. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+```{r}
+#| label: tbl-b3-push-shares
+#| tbl-cap: "Labour market position and liquidity at t−1 among people at risk of entering business ownership, by origin group."
+#| echo: false
+
+push_vars <- c(
+  unemployed_l1 = "Unemployed",
+  nilf_l1 = "Not in labour force",
+  low_wage_l1 = "Bottom wage quintile",
+  liquidity_l1 = "Liquidity constrained"
+)
+
+# Liquidity is observed only for people who returned the self-completion
+# questionnaire, so it uses those person-pairs alone
+push_sample <- function(d, v) {
+  if (v == "liquidity_l1") dplyr::filter(d, liquidity_miss_l1 == 0) else d
+}
+
+# Share of each group in each position, in percent
+push_shares <- function(d) {
+  out <- tibble::tibble(Group = unname(group_labels))
+  for (v in names(push_vars)) {
+    dv <- push_sample(d, v)
+    s <- tapply(dv[[v]], dv$origin_group, mean)[names(group_labels)]
+    out[[push_vars[[v]]]] <- ifelse(is.na(s), "–", sprintf("%.1f", 100 * s))
+  }
+  out
+}
+
+# Difference from the native-born in percentage points (07_analysisblock3.R)
+push_diff <- regression3_push_position
+
+# Each difference (with its stars) over its standard error
+diff_rows <- tibble::tibble(Group = as.vector(rbind(unname(group_labels[-1]), "")))
+for (v in names(push_vars)) {
+  ct <- fixest::coeftable(push_diff[[v]])
+  terms <- paste0("origin_group::", names(group_labels)[-1])
+  diff_rows[[push_vars[[v]]]] <- as.vector(rbind(
+    sprintf("%.1f%s", ct[terms, 1], add_stars(ct[terms, 4])),
+    sprintf("(%.1f)", ct[terms, 2])
+  ))
+}
+
+entrants <- dplyr::filter(data_regression_3, entry_owner == 1)
+n_col <- function(d) fmt_int(as.integer(table(d$origin_group)[names(group_labels)]))
+
+dplyr::bind_rows(
+  dplyr::mutate(push_shares(data_regression_3), `Person-pairs` = n_col(data_regression_3)),
+  dplyr::mutate(diff_rows, `Person-pairs` = ""),
+  dplyr::mutate(push_shares(entrants), `Person-pairs` = n_col(entrants))
+) |>
+  dplyr::rename(" " = Group) |>
+  tinytable::tt(width = c(0.25, rep(0.15, 4), 0.15)) |>
+  tinytable::theme_empty() |>
+  tinytable::group_tt(i = list(
+    "Panel A: Share of person-pairs at risk of entry (%)" = 1,
+    "Panel B: Difference from the native-born, adjusted (percentage points)" = 5,
+    "Panel C: Share of entrants (%)" = 11
+  )) |>
+  tinytable::style_tt(i = 0, line = "tb") |>
+  tinytable::style_tt(i = c(1, 6, 13), italic = TRUE) |>
+  tinytable::style_tt(i = 17, line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:6, align = "c") |>
+  pair_se_rows(c(1, 5, 11))
+```
+
+::: {.notes}
+*Notes:* This table reports labour market position and liquidity at $t-1$ by origin group, for person-pairs in the transition sample of @tbl-b3-main. Each column is an indicator defined in @sec-data-outcomes. Panel A reports the percentage of each group in each position. Panel B reports the difference from the native-born from an OLS regression of the indicator (multiplied by 100) on the origin groups, age, age squared, sex and year fixed effects, with standard errors clustered at the individual level in parentheses. Panel C repeats Panel A for the person-pairs in which the individual enters ownership at $t$, and rests on few low-English entries. Liquidity is observed only for respondents who returned the self-completion questionnaire, so its shares and differences use those person-pairs alone. ∗ p < 0.10, ∗∗ p < 0.05, ∗∗∗ p < 0.01.
+:::
+
+## Hourly Income of Owners and Employees {#sec-appendix-gap}
+
+```{r}
+#| label: gap-data
+#| include: false
+
+# Run this chunk before tbl-gap-industry.
+# Rebuilds the industry-year gap data from panel_final (waves 1 to 21).
+gap_cells <- panel_final |>
+  dplyr::filter(as.integer(as.character(wave)) <= 21) |>
+  dplyr::mutate(
+    year_num = as.integer(as.character(year)),
+    industry = stringr::str_to_sentence(as.character(industry_19categories_jbmi61)),
+    hourly_income = dplyr::if_else(
+      hours_weekly_all_job_jbhruc > 0,
+      income_labour_and_business / (52 * hours_weekly_all_job_jbhruc),
+      NA_real_
+    ),
+    is_small_employee = is_employee %in% 1 & small_single_site %in% 1,
+    is_small_owner = owner_with_employees %in% 1 & dplyr::coalesce(small_wp == 1, FALSE) & !is.na(hourly_income)
+  ) |>
+  dplyr::filter(!is.na(industry))
+
+gap_kt <- gap_cells |>
+  dplyr::summarise(
+    wage_employee = median(hrwge_main_clean[is_small_employee], na.rm = TRUE),
+    income_owner = median(hourly_income[is_small_owner], na.rm = TRUE),
+    n_owner = sum(is_small_owner),
+    share_migrant = mean(migrant[is_small_owner] %in% 1),
+    .by = c(industry, year_num)
+  ) |>
+  dplyr::filter(n_owner >= 10, wage_employee > 0, income_owner > 0) |>
+  dplyr::mutate(gap_hourly = log(wage_employee) - log(income_owner))
+
+gap_by_industry <- gap_kt |>
+  dplyr::summarise(
+    n_years = dplyr::n(),
+    gap = stats::weighted.mean(gap_hourly, n_owner),
+    se = sqrt(sum(n_owner^2 * (gap_hourly - gap)^2)) / sum(n_owner),
+    share_migrant = stats::weighted.mean(share_migrant, n_owner),
+    .by = industry
+  ) |>
+  dplyr::filter(n_years >= 3)
+
+time_industries <- gap_kt |>
+  dplyr::count(industry) |>
+  dplyr::filter(n >= 10) |>
+  dplyr::pull(industry)
+
+# Checks against the numbers quoted in the text
+nrow(gap_kt)                                          # 273 industry-years
+stats::weighted.mean(gap_kt$gap_hourly, gap_kt$n_owner)  # about -0.085
+mean(gap_kt$gap_hourly > 0)                           # about 0.37
+
+# The two industries with the largest migrant share of owners, quoted in the text
+gap_top <- dplyr::slice_max(gap_by_industry, share_migrant, n = 2)
+```
+
+The regressions in @tbl-b2-main compare owners with employees in general, conditional on the controls. As a complementary descriptive measure, we compare the income of employees in small independent workplaces with that of owners with employees in the same industry and year.
+
+$$
+\text{WorkerOwnerGap}_{kt} = \underset{kt}{\text{Median}}\left(\log w^{\,\text{Employee, SmallSingleSite}}\right) - \underset{kt}{\text{Median}}\left(\log y^{\,\text{OwnerWithEmployees}}\right)
+$$ {#eq-worker-owner-gap}
+
+where the medians are taken over employees and owners within industry $k$ and year $t$. Both terms are measured per hour of work. $w$ is the employee's hourly wage in their main job, and $y$ is the owner's annual labour and business income divided by their annual hours, since owners typically work longer hours than employees. Medians are used so that the measure remains defined when some owners report business losses.[^gapcells] A positive gap indicates that employees earn more per hour than owners in the same industry.
+
+[^gapcells]: The gap is computed only for industry-years with at least 10 owners with employees, to avoid imprecise estimates from small cells.
+
+@tbl-gap-industry shows that the gap varies considerably across industries. Employees earn more per hour than owners in low-margin industries dominated by small businesses, including accommodation and food services, agriculture, retail trade and other services. In accommodation and food services, employees earn around 30 per cent more per hour than the owners of small businesses in the same industry. In professional industries such as health care, finance and professional services, owners earn substantially more per hour than employees. The ordering does not follow the share of migrant owners. The two industries with the largest migrant shares of owners are `r tolower(gap_top$industry[1])` (`r fmt_num(100 * gap_top$share_migrant[1], 0)` per cent) and `r tolower(gap_top$industry[2])` (`r fmt_num(100 * gap_top$share_migrant[2], 0)` per cent), with gaps of `r fmt_num(gap_top$gap[1], 2)` and `r fmt_num(gap_top$gap[2], 2)` log points.
+
+Across all 273 industry-years, owners with employees earn more than employees of small independent workplaces, by about 9 per cent per hour (a weighted mean gap of $-0.085$ log points) and about 60 per cent per year ($-0.472$ log points). The much larger annual difference reflects the longer hours worked by owners. Employees nonetheless earn more per hour than owners in 37 per cent of industry-years, concentrated in the low-margin industries at the top of @tbl-gap-industry.
+
+```{r}
+#| label: tbl-gap-industry
+#| tbl-cap: "Median hourly income gap between employees and owners with employees, by industry."
+#| echo: false
+
+fmt3 <- \(x) formatC(x, format = "f", digits = 3)
+
+gap_by_year <- gap_kt |>
+  dplyr::summarise(
+    n_years = dplyr::n(),
+    share_positive = mean(gap_hourly > 0),
+    .by = industry
+  )
+
+gap_industries <- gap_by_industry |>
+  dplyr::select(industry, gap, se, share_migrant) |>
+  dplyr::left_join(gap_by_year, by = "industry") |>
+  dplyr::arrange(dplyr::desc(gap))
+
+gap_overall <- tibble::tibble(
+  industry = "All industry-years",
+  gap = stats::weighted.mean(gap_kt$gap_hourly, gap_kt$n_owner),
+  se = NA_real_,
+  share_migrant = stats::weighted.mean(gap_kt$share_migrant, gap_kt$n_owner),
+  n_years = nrow(gap_kt),
+  share_positive = mean(gap_kt$gap_hourly > 0)
+)
+
+# One row per industry, with the standard error of its mean gap on the row
+# below; the pooled row has no standard error
+gap_row <- \(d) tibble::tibble(
+  Industry = c(d$industry, if (!is.na(d$se)) ""),
+  `Industry-years` = c(as.character(d$n_years), if (!is.na(d$se)) ""),
+  `Mean gap (log points)` = c(fmt3(d$gap), if (!is.na(d$se)) paste0("(", fmt3(d$se), ")")),
+  `Years with positive gap` = c(scales::percent(d$share_positive, accuracy = 1), if (!is.na(d$se)) ""),
+  `Migrant share of owners` = c(scales::percent(d$share_migrant, accuracy = 1), if (!is.na(d$se)) "")
+)
+gap_display <- dplyr::bind_rows(gap_industries, gap_overall) |>
+  split(seq_len(nrow(gap_industries) + 1)) |>
+  purrr::map_dfr(gap_row)
+
+tinytable::tt(gap_display) |>
+  tinytable::theme_empty() |>
+  tinytable::style_tt(i = 0, line = "tb") |>
+  tinytable::style_tt(i = 2 * nrow(gap_industries), line = "b") |>
+  tinytable::style_tt(i = nrow(gap_display), line = "b") |>
+  tinytable::style_tt(j = 1, align = "l") |>
+  tinytable::style_tt(j = 2:5, align = "c") |>
+  pair_se_rows()
+```
+
+::: {.notes}
+*Notes:* This table reports the median hourly income gap of @eq-worker-owner-gap by industry, in HILDA waves 1 to 21. The gap is the median log hourly wage of employees in small single-site workplaces minus the median log hourly income of owners with employees in small workplaces, within each industry and year; a positive gap means that employees earn more per hour than owners. The mean gap for each industry is the average over its industry-years with at least 10 owners, weighted by the number of owners, and industries with fewer than three such years are not listed. The standard error in parentheses treats industry-years as independent and is therefore indicative. The last row pools all industry-years.
+:::
+
+## Assimilation Decay Horizons: Supporting Literature {#sec-appendix-assimilation}
+
+@sec-loo-shares searches over the decay parameter $\lambda$ in the range $[0, 0.30]$ for a single pooled rate and $[0, 0.50]$ for origin-specific rates. This range is informed by a broader literature on the horizon over which migrants' earnings, occupational status and linguistic proficiency converge toward native-born benchmarks.
+
+@chiswick_effect_1978 and @schuetze_immigration_2007 established that immigrant earnings typically converge to native benchmarks within 10 to 15 years, consistent with @akee_immigrant_2026, who find, using administrative panel data in the United States, that recent cohorts achieve parity within 10 years, though earlier cohorts exhibit strong growth without complete convergence. Examining job search mechanics, @bowlus_immigrant_2016 estimates that immigrants take an average of 13 years to match native job offer arrival rates. Longer horizons are also evident. @arellano-bover_role_2026 show that the overall wage gap closes only after 27 to 29 years, with convergence and long-term prosperity driven primarily by firm-to-firm mobility and climbing the employer ladder. In the Australian context, @chiswick_longitudinal_2005 document a U-shaped occupational trajectory, where an initial drop in status due to imperfect skill transferability is followed by gradual earnings recovery. @schuetze_immigration_2007 found that self-employment rates for specific immigrant cohorts steadily increase with their time spent in the host country (main countries of the study include the United States, Canada and Australia), typically catching up to native-born rates within 10 to 20 years of arrival. Although self-employed immigrants tend to outperform their native counterparts, @schuetze_immigration_2007 attributes this to the fact that the countries used their analysis, as well as many other developed nations, use special visas and entrepreneurial entry requirements as tools to attract foreign talent, but notes that broader market structures and local economic conditions remain the strongest overall drivers of success. @breunig_immigrant_2013 examines the wage gap on entry and wage assimilation of immigrants to Australia by comparing results from standard cross-sectional models (Heckman selection model) with panel data estimators (Fixed Effects, Random Effects and Hausman-Taylor (HT) estimator) to account for unobserved individual heterogeneity. They found that there is a wage gap for immigrant men from English-speaking backgrounds, in contrast with previous research which has found no wage gap and wage assimilation occurs slowly for all immigrant groups, but is much faster for MES men than for MNES group.
+
+Evidence on identity and linguistic assimilation provides further guidance on empirical decay horizons. @abramitzky_immigrants_2020 show that naming convergence between immigrant and native parents occurs over roughly 20 years. Language acquisition follows a similar pattern. @kulkarni_english_2014 find that English proficiency rises from 45 to 55% at arrival to 60 to 63% after 5 years, and reaches 66 to 67% after 10 years, reflecting rapid initial gains followed by slow gains thereafter [@espinosa_determinants_1997; @kossoudji_english_1988; @stevens_age_1999; @guven_age_2015]. Wage convergence, however, proceeds more slowly for non-English-speaking migrants once individual heterogeneity is controlled for, with older arrival cohorts experiencing persistent structural gaps [@breunig_immigrant_2013].
+
+Furthermore, @chiswick_longitudinal_2005 suggests that immigrants moving between similar institutional contexts, such as an English-speaking Canadian entering the United States, face minimal initial downward mobility. For these main English-speaking migrants, divergence from native-born workers depends primarily on arrival timing, not skill acquisition. Indeed, the literature on Australia and the United States documents "negative" assimilation among immigrants from English-speaking developed countries, where initial wage premiums decay over time [@chiswick_negative_2011; @chiswick_negative_2011-1]. In Australia, migrants from English-speaking developed countries experience a relative earnings decline over their duration of residence, with earnings 5.5% lower for the 1988 cohort than the 1998 cohort over ten years [@chiswick_negative_2011].
+
+Broader socio-cultural integration reflects a similar pattern. While shared values facilitate smoother initial settlement [@nakhaie_language_2020], full identity assimilation can remain non-converged even after decades abroad [@scott_transnational_2004]. Anglophone immigrants in Australia, and UK-born immigrants specifically, nonetheless exhibit employment outcomes and qualification returns nearly identical to those of native-born Australians [@colic-peisker_ethnics_2011]. Identity and cultural assimilation operate on much longer horizons than economic, occupational and linguistic assimilation, so our empirical focus in the main text centres strictly on the latter.
+
+@tbl-lambda-calibration reports the five best-fitting values of $\lambda$ within each of the three decay specifications described in @sec-loo-shares, alongside the mean squared error achieved via cross-validation.
+
+```{r}
+#| label: tbl-lambda-calibration
+#| tbl-cap: "Best-fitting $\\lambda$ estimates for three specifications."
+#| echo: false
+
+mse_ref <- cal$type1 |> filter(lambda == 0) |> pull(mse)
+
+# Half-life in years; a zero decay rate never halves, shown as infinity
+half_life <- \(l) ifelse(l == 0, "∞", sprintf("%.1f", log(2) / l))
+
+t1 <- cal$type1 |>
+  arrange(mse) |>
+  slice_head(n = 5) |>
+  transmute(
+    spec = "Type 1",
+    lam = sprintf("%.2f", lambda),
+    lam_mes = "",
+    lam_mn = "",
+    hl = half_life(lambda),
+    hl_mes = "",
+    hl_mn = "",
+    mse = mse
+  )
+
+t2 <- cal$type2 |>
+  arrange(mse) |>
+  slice_head(n = 5) |>
+  transmute(
+    spec = "Type 2",
+    lam = "",
+    lam_mes = sprintf("%.2f", lambda_mes),
+    lam_mn = sprintf("%.2f", lambda_mnes),
+    hl = "",
+    hl_mes = half_life(lambda_mes),
+    hl_mn = half_life(lambda_mnes),
+    mse = mse
+  )
+
+ref <- tibble(
+  spec = "Type 0",
+  lam = "0.00",
+  lam_mes = "",
+  lam_mn = "",
+  hl = "--",
+  hl_mes = "",
+  hl_mn = "",
+  mse = mse_ref
+)
+
+tab <- bind_rows(ref, t1, t2) |>
+  mutate(
+    mse_fmt = sprintf("%.8f", mse),
+    delta = sprintf("%+.2f", 1e5 * (mse - mse_ref)),
+    spec = if_else(duplicated(spec), "", spec)
+  )
+
+tab |>
+  select(spec, lam, hl, lam_mes, lam_mn, hl_mes, hl_mn, mse_fmt, delta) |>
+  setNames(
+    c(
+      "Type",
+      "$lambda$",
+      "Half-life",
+      "$lambda_\"MES\"$",
+      "$lambda_\"MNES\"$",
+      "Half-life (MES)",
+      "Half-life (MNES)",
+      "MSE",
+      "Difference (in $10^5$ scale)"
+    )
+  ) |>
+  tt(
+    width = c(0.10, 0.09, 0.09, 0.09, 0.10, 0.10, 0.10, 0.16, 0.17)
+  ) |>
+  style_tt(i = c(2, 7), j = 2:9, bold = TRUE) |>
+  style_tt(i = 0, line = "tb") |>
+  style_tt(i = c(2, 7), line = "t") |>
+  style_tt(j = 2:9, align = "r") |>
+  style_tt(i = 0, bold = FALSE, align = "c") |>
+  style_tt(i = 0, line = "b")
+```
+
+::: {.notes}
+*Notes:* This table reports the five best-fitting decay rates for each specification of @sec-loo-shares, ranked by the five-fold cross-validated mean squared error (MSE) of log hourly wages. Type 0 applies no decay ($\lambda = 0$), Type 1 a single pooled rate to all migrant owners and Type 2 separate rates to MES and MNES owners. Half-lives are $\ln 2 / \lambda$ in years. *Difference* is the change in MSE from the Type 0 benchmark, multiplied by $10^5$. The selected values are in bold.
+:::
+
+The Type 2 specification, which allows the decay rate to vary by English-speaking background, achieves the lowest mean squared error of the three, but its gain over no decay is small relative to the error itself. We therefore use the plain owner shares (Type 0) for the main employee wage estimates and report Types 1 and 2 as robustness checks.

@@ -1,0 +1,10 @@
+.DS_Store
+.Rhistory
+.RData
+.Rproj.user/
+.quarto/
+# HILDA unit-record data and datasets built from it cannot be redistributed
+project/data/
+project/output/data/
+project/thesis/_book/
+project/code/temp/

@@ -1,0 +1,36 @@
+\begin{table}
+\centering
+\begin{tblr}[         %% tabularray outer open
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+width={1\linewidth},
+colspec={X[0.19]X[0.12]X[0.12]X[0.12]X[0.12]X[0.12]X[0.12]X[0.09]},
+hline{2}={3,6}{solid, black, 0.03em},
+hline{2}={2,5}{solid, black, 0.03em, l=-0.5},
+hline{2}={4,7}{solid, black, 0.03em, r=-0.5},
+hline{1}={1-8}{solid, black, 0.1em},
+hline{3}={1-8}{solid, black, 0.1em},
+hline{11}={1-8}{solid, black, 0.1em},
+hline{13}={1-8}{solid, black, 0.1em},
+column{3-4,6-8}={}{halign=c},
+cell{1-2,4,6,8,10-12}{1}={}{halign=l},
+cell{1}{2}={c=3}{halign=c, wd=0.36\linewidth},
+cell{1}{5}={c=3}{halign=c, wd=0.36\linewidth},
+cell{2-12}{2}={}{halign=c},
+cell{2-12}{5}={}{halign=c},
+cell{3,5,7,9}{1}={r=2}{halign=l, valign=h},
+}                     %% tabularray inner close
+& Unrestricted sample: status at t &  &  & Restricted sample: same status at t−1 and t &  &  &  \\
+Dependent variable: & Income (dollars) & Volatility (pp) & Large fall (pp) & Income (dollars)  & Volatility (pp)  & Large fall (pp)  & Small employers (restricted sample) \\
+Native-born & 12,730∗∗∗ & 27.3∗∗∗ & 15.1∗∗∗ & 14,369∗∗∗ & 32.7∗∗∗ & 17.3∗∗∗ & 1,103 \\
+& (3,136) & (1.2) & (0.7) & (4,168) & (1.4) & (0.8) &  \\
+MES & 9,263∗ & 25.4∗∗∗ & 15.4∗∗∗ & 11,665∗ & 29.1∗∗∗ & 17.2∗∗∗ & 151 \\
+& (5,325) & (2.8) & (1.6) & (6,310) & (3.3) & (1.8) &  \\
+MNES high-English & 17,217∗∗∗ & 21.8∗∗∗ & 12.3∗∗∗ & 20,298∗∗∗ & 25.8∗∗∗ & 13.8∗∗∗ & 193 \\
+& (4,893) & (2.6) & (1.3) & (5,329) & (3.3) & (1.6) &  \\
+MNES low-English & 24,541∗∗ & 39.1∗∗∗ & 19.5∗∗∗ & 19,169∗∗∗ & 44.3∗∗∗ & 20.7∗∗ & 13 \\
+& (10,275) & (12.2) & (7.0) & (7,121) & (14.5) & (8.5) &  \\
+Observations (person-pairs) & 174,962 & 174,962 & 164,973 & 152,060 & 152,060 & 148,198 &  \\
+Individuals & 21,549 & 21,549 & 20,618 & 20,031 & 20,031 & 19,747 &  \\
+\end{tblr}
+\end{table}

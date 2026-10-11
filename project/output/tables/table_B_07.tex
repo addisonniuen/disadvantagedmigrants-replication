@@ -1,0 +1,97 @@
+\begin{table}
+\centering
+\begin{tblr}[         %% tabularray outer open
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]},
+hline{2}={3}{solid, black, 0.03em},
+hline{2}={2}{solid, black, 0.03em, l=-0.5},
+hline{1}={1-3}{solid, black, 0.1em},
+hline{3}={1-3}{solid, black, 0.1em},
+hline{65}={1-3}{solid, black, 0.1em},
+hline{75}={1-3}{solid, black, 0.1em},
+cell{1-2,4-9,11-14,16-27,29-42,44-55,57-74}{3}={}{halign=c},
+cell{1-2,5,7,9,12,14,17,19,21,23,25,27,30,32,34,36,38,40,42,45,47,49,51,53,55,58,60,62,64-74}{1}={}{halign=l},
+cell{1}{2}={c=2}{halign=c},
+cell{2,4-9,11-14,16-27,29-42,44-55,57-74}{2}={}{halign=c},
+cell{3,10,15,28,43,56}{1}={c=3}{font=\itshape, halign=l},
+cell{3,10,15,28,43,56}{2}={}{font=\itshape, halign=c},
+cell{3,10,15,28,43,56}{3}={}{font=\itshape, halign=c},
+cell{4,6,8,11,13,16,18,20,22,24,26,29,31,33,35,37,39,41,44,46,48,50,52,54,57,59,61,63}{1}={r=2}{halign=l, valign=h},
+}                     %% tabularray inner close
+& Dependent variable: log hourly wage in main job &  \\
+& One-digit industry & Two-digit industry \\
+Firm structure & Firm structure & Firm structure \\
+Small single-site & -0.148∗∗∗ & -0.101∗∗∗ \\
+& (0.017) & (0.010) \\
+Chain-like & 0.059∗∗∗ & 0.047∗∗∗ \\
+& (0.005) & (0.006) \\
+Small-site chain & -0.031∗∗∗ & -0.033∗∗∗ \\
+& (0.005) & (0.006) \\
+Interactions of firm structure with owner density & Interactions of firm structure with owner density & Interactions of firm structure with owner density \\
+Small single-site x Migrant owner density & 0.156∗∗∗ & 0.012 \\
+& (0.051) & (0.024) \\
+Small single-site x Low-English owner density & -0.298 & -0.089 \\
+& (0.194) & (0.080) \\
+Demographics & Demographics & Demographics \\
+Age & 0.006∗∗∗ & 0.006∗∗∗ \\
+& (0.000) & (0.000) \\
+Female & -0.080∗∗∗ & -0.068∗∗∗ \\
+& (0.005) & (0.006) \\
+MES worker & 0.017∗∗ & 0.013∗ \\
+& (0.008) & (0.008) \\
+MNES high-English worker & -0.026∗∗∗ & -0.031∗∗∗ \\
+& (0.008) & (0.008) \\
+MNES low-English worker & -0.162∗∗∗ & -0.154∗∗∗ \\
+& (0.029) & (0.029) \\
+SEIFA decile & 0.013∗∗∗ & 0.013∗∗∗ \\
+& (0.001) & (0.001) \\
+Occupation & Occupation & Occupation \\
+Professionals & -0.060∗∗∗ & -0.066∗∗∗ \\
+& (0.010) & (0.010) \\
+Technicians and trades & -0.235∗∗∗ & -0.241∗∗∗ \\
+& (0.011) & (0.011) \\
+Community and personal service & -0.235∗∗∗ & -0.205∗∗∗ \\
+& (0.012) & (0.012) \\
+Clerical and administrative & -0.226∗∗∗ & -0.229∗∗∗ \\
+& (0.010) & (0.010) \\
+Sales & -0.284∗∗∗ & -0.277∗∗∗ \\
+& (0.012) & (0.012) \\
+Machinery operators and drivers & -0.277∗∗∗ & -0.268∗∗∗ \\
+& (0.013) & (0.012) \\
+Labourers & -0.324∗∗∗ & -0.307∗∗∗ \\
+& (0.012) & (0.013) \\
+Education & Education & Education \\
+Postgraduate & 0.345∗∗∗ & 0.335∗∗∗ \\
+& (0.013) & (0.013) \\
+Graduate diploma or certificate & 0.286∗∗∗ & 0.289∗∗∗ \\
+& (0.012) & (0.012) \\
+Bachelor or honours & 0.259∗∗∗ & 0.259∗∗∗ \\
+& (0.009) & (0.009) \\
+Advanced diploma or diploma & 0.171∗∗∗ & 0.174∗∗∗ \\
+& (0.009) & (0.009) \\
+Certificate III or IV & 0.133∗∗∗ & 0.135∗∗∗ \\
+& (0.007) & (0.007) \\
+Year 12 & 0.110∗∗∗ & 0.110∗∗∗ \\
+& (0.008) & (0.008) \\
+Job characteristics & Job characteristics & Job characteristics \\
+Permanent (vs casual) & -0.020∗∗∗ & -0.024∗∗∗ \\
+& (0.006) & (0.006) \\
+Occupational tenure (years) & 0.004∗∗∗ & 0.004∗∗∗ \\
+& (0.000) & (0.000) \\
+Employer tenure (years) & 0.001∗∗∗ & 0.001∗∗ \\
+& (0.000) & (0.000) \\
+Union member & 0.046∗∗∗ & 0.041∗∗∗ \\
+& (0.006) & (0.006) \\
+Observations (person-years) & 156,786 & 144,607 \\
+R-Squared & 0.490 & 0.502 \\
+Adjusted R-Squared & 0.488 & 0.496 \\
+Individuals & 23,067 & 22,756 \\
+Industry classification & 1-digit (19 categories) & 2-digit (85 categories) \\
+Year FEs & Yes & Yes \\
+Industry-year FEs & Yes & Yes \\
+State-year FEs & Yes & Yes \\
+F-Statistic (df) & 5.302 (2, 397) & 0.649 (2, 397) \\
+F-test p-value & 0.005 & 0.523 \\
+\end{tblr}
+\end{table}

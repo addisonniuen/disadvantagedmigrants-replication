@@ -1,0 +1,104 @@
+\begin{table}
+\centering
+\begin{tblr}[         %% tabularray outer open
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]Q[]},
+hline{2}={3-4}{solid, black, 0.03em},
+hline{2}={2}{solid, black, 0.03em, l=-0.5},
+hline{1}={1-4}{solid, black, 0.1em},
+hline{3}={1-4}{solid, black, 0.1em},
+hline{67}={1-4}{solid, black, 0.1em},
+hline{80}={1-4}{solid, black, 0.1em},
+cell{1-2,4-9,11-16,18-29,31-44,46-57,59-79}{3}={}{halign=c},
+cell{1-2,4-9,11-16,18-29,31-44,46-57,59-79}{4}={}{halign=c},
+cell{1-2,5,7,9,12,14,16,19,21,23,25,27,29,32,34,36,38,40,42,44,47,49,51,53,55,57,60,62,64,66-79}{1}={}{halign=l},
+cell{1}{2}={c=3}{halign=c},
+cell{2,4-9,11-16,18-29,31-44,46-57,59-79}{2}={}{halign=c},
+cell{3,10,17,30,45,58}{1}={c=4}{font=\itshape, halign=l},
+cell{3,10,17,30,45,58}{2}={}{font=\itshape, halign=c},
+cell{3,10,17,30,45,58}{3}={}{font=\itshape, halign=c},
+cell{3,10,17,30,45,58}{4}={}{font=\itshape, halign=c},
+cell{4,6,8,11,13,15,18,20,22,24,26,28,31,33,35,37,39,41,43,46,48,50,52,54,56,59,61,63,65}{1}={r=2}{halign=l, valign=h},
+}                     %% tabularray inner close
+& Dependent variable: log hourly wage in main job &  &  \\
+& No decay (Type 0) & Pooled decay (Type 1) & Origin-specific decay (Type 2) \\
+Firm structure & Firm structure & Firm structure & Firm structure \\
+Small single-site & -0.112∗∗∗ & -0.117∗∗∗ & -0.150∗∗∗ \\
+& (0.015) & (0.014) & (0.011) \\
+Chain-like & 0.059∗∗∗ & 0.059∗∗∗ & 0.058∗∗∗ \\
+& (0.005) & (0.005) & (0.005) \\
+Small-site chain & -0.031∗∗∗ & -0.031∗∗∗ & -0.031∗∗∗ \\
+& (0.005) & (0.005) & (0.005) \\
+Interactions of firm structure with owner density & Interactions of firm structure with owner density & Interactions of firm structure with owner density & Interactions of firm structure with owner density \\
+Small single-site x MES owner density & -0.254∗∗∗ & -0.502∗∗∗ & 4.242 \\
+& (0.074) & (0.139) & (5.962) \\
+Small single-site x MNES high-English owner density & 0.217∗∗∗ & 0.451∗∗∗ & 0.367∗∗∗ \\
+& (0.058) & (0.089) & (0.072) \\
+Small single-site x MNES low-English owner density & 0.456∗∗∗ & 0.666∗∗∗ & 0.676∗∗∗ \\
+& (0.135) & (0.215) & (0.171) \\
+Demographics & Demographics & Demographics & Demographics \\
+Age & 0.006∗∗∗ & 0.006∗∗∗ & 0.006∗∗∗ \\
+& (0.000) & (0.000) & (0.000) \\
+Female & -0.080∗∗∗ & -0.080∗∗∗ & -0.080∗∗∗ \\
+& (0.005) & (0.005) & (0.005) \\
+MES worker & 0.016∗ & 0.016∗ & 0.016∗ \\
+& (0.008) & (0.008) & (0.008) \\
+MNES high-English worker & -0.028∗∗∗ & -0.028∗∗∗ & -0.028∗∗∗ \\
+& (0.008) & (0.008) & (0.008) \\
+MNES low-English worker & -0.162∗∗∗ & -0.162∗∗∗ & -0.162∗∗∗ \\
+& (0.032) & (0.032) & (0.032) \\
+SEIFA decile & 0.013∗∗∗ & 0.013∗∗∗ & 0.013∗∗∗ \\
+& (0.001) & (0.001) & (0.001) \\
+Occupation & Occupation & Occupation & Occupation \\
+Professionals & -0.060∗∗∗ & -0.060∗∗∗ & -0.060∗∗∗ \\
+& (0.010) & (0.010) & (0.010) \\
+Technicians and trades & -0.237∗∗∗ & -0.237∗∗∗ & -0.237∗∗∗ \\
+& (0.011) & (0.011) & (0.011) \\
+Community and personal service & -0.238∗∗∗ & -0.238∗∗∗ & -0.238∗∗∗ \\
+& (0.012) & (0.012) & (0.012) \\
+Clerical and administrative & -0.228∗∗∗ & -0.228∗∗∗ & -0.228∗∗∗ \\
+& (0.010) & (0.010) & (0.010) \\
+Sales & -0.287∗∗∗ & -0.287∗∗∗ & -0.287∗∗∗ \\
+& (0.013) & (0.013) & (0.013) \\
+Machinery operators and drivers & -0.278∗∗∗ & -0.278∗∗∗ & -0.278∗∗∗ \\
+& (0.013) & (0.013) & (0.013) \\
+Labourers & -0.324∗∗∗ & -0.324∗∗∗ & -0.324∗∗∗ \\
+& (0.013) & (0.013) & (0.013) \\
+Education & Education & Education & Education \\
+Postgraduate & 0.349∗∗∗ & 0.349∗∗∗ & 0.349∗∗∗ \\
+& (0.013) & (0.013) & (0.013) \\
+Graduate diploma or certificate & 0.288∗∗∗ & 0.288∗∗∗ & 0.288∗∗∗ \\
+& (0.012) & (0.012) & (0.012) \\
+Bachelor or honours & 0.261∗∗∗ & 0.261∗∗∗ & 0.262∗∗∗ \\
+& (0.009) & (0.009) & (0.009) \\
+Advanced diploma or diploma & 0.172∗∗∗ & 0.172∗∗∗ & 0.173∗∗∗ \\
+& (0.009) & (0.009) & (0.009) \\
+Certificate III or IV & 0.136∗∗∗ & 0.136∗∗∗ & 0.137∗∗∗ \\
+& (0.007) & (0.007) & (0.007) \\
+Year 12 & 0.112∗∗∗ & 0.111∗∗∗ & 0.112∗∗∗ \\
+& (0.008) & (0.008) & (0.008) \\
+Job characteristics & Job characteristics & Job characteristics & Job characteristics \\
+Permanent (vs casual) & -0.021∗∗∗ & -0.021∗∗∗ & -0.021∗∗∗ \\
+& (0.006) & (0.006) & (0.006) \\
+Occupational tenure (years) & 0.004∗∗∗ & 0.004∗∗∗ & 0.004∗∗∗ \\
+& (0.000) & (0.000) & (0.000) \\
+Employer tenure (years) & 0.001∗∗∗ & 0.001∗∗∗ & 0.001∗∗∗ \\
+& (0.000) & (0.000) & (0.000) \\
+Union member & 0.045∗∗∗ & 0.045∗∗∗ & 0.045∗∗∗ \\
+& (0.006) & (0.006) & (0.006) \\
+Observations (person-years) & 149,673 & 149,673 & 149,673 \\
+R-Squared & 0.481 & 0.482 & 0.481 \\
+Adjusted R-Squared & 0.479 & 0.480 & 0.479 \\
+Individuals & 22,335 & 22,335 & 22,335 \\
+Year FEs & Yes & Yes & Yes \\
+Industry-year FEs & Yes & Yes & Yes \\
+State-year FEs & Yes & Yes & Yes \\
+F-Statistic (df) & 17.109 (3, 371) & 23.551 (3, 371) & 15.013 (3, 371) \\
+F-test p-value & < 0.001 & < 0.001 & < 0.001 \\
+Wild bootstrap p-value, MES & 0.077 & 0.042 & 0.578 \\
+Wild bootstrap p-value, MNES high-English & 0.087 & 0.013 & 0.031 \\
+Wild bootstrap p-value, MNES low-English & 0.151 & 0.173 & 0.216 \\
+Wild bootstrap p-value, joint & 0.022 & 0.021 & 0.033 \\
+\end{tblr}
+\end{table}

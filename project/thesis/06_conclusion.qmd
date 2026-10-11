@@ -1,0 +1,48 @@
+# Conclusion {#sec-conclusion}
+
+Labour regulation assumes that employers hold bargaining power over their workers. This paper asked whether this assumption fails in small businesses owned by migrants with limited English, who depend on their employees for the language skills and local knowledge needed to run the business. We developed a model of bargaining under compliance risk and tested three of its predictions with 24 waves of the HILDA Survey, using industry-level measures of migrant business ownership by English proficiency.
+
+We find little evidence that bargaining power shifts towards workers in these businesses. The wage penalty of small independent workplaces falls from about 11 per cent to under 2 per cent in industries with many English-proficient migrant owners, but it does not fall where owners have limited English. Owners with employees in every origin group earn more than employees of their own origin in exchange for much more volatile income, and we detect no difference for migrant owners. The clearest disadvantage of migrants with limited English appears when they enter ownership. For this group, unemployment raises the odds of starting a business by a factor of 7.9, compared with 1.9 for the native-born, and this push persists over time.
+
+This paper makes three contributions. It provides the first test of power reversal using nationally representative data. It develops a measure of exposure to migrant ownership that researchers can use when workers cannot be linked to their employers. It also follows people who start businesses out of necessity beyond the point of entry. Our results suggest that policy towards small migrant-owned businesses should focus less on the balance of power within these firms and more on the weak positions from which migrants with limited English enter ownership.
+
+Our conclusions are limited by the small number of owners with limited English in HILDA and by the lack of links between workers and their employers. Linked administrative data covering all migrant business owners would allow future research to compare wages, compliance costs and owner incomes within migrant-owned firms directly.
+
+## Data and Code Availability {.unnumbered}
+
+This paper uses unit record data from General Release 24.0 of the Household, Income and Labour Dynamics in Australia (HILDA) Survey, conducted by the Australian Government Department of Social Services (DSS). The data are not publicly available. Researchers can apply for access to HILDA through the DSS and the National Centre for Longitudinal Data.
+
+All data processing, estimation, tables and figures in this paper are produced by our own code, which is available at <https://github.com/addisonniuen/disadvantagedmigrants-replication>. The repository contains the full replication package, including the scripts that clean and construct the analysis samples from the HILDA release files, estimate every model and reproduce each table and figure, together with instructions for running them. We carried out the analysis in R version 4.5.3 [@r_core_team_2026], with the fixest package for estimation [@berge_fixest_2026] and the tidyverse for data processing [@wickham_welcome_2019]. We produced the tables with the modelsummary and tinytable packages [@arel-bundock_modelsummary_2022; @arel-bundock_tinytable_2026] and wrote and rendered the paper with Quarto [@posit_quarto_2026].
+
+```{=typst}
+#bibliography("thesisrefs.bib", title: "References", style: "apa.csl")
+```
+
+```{=typst}
+#set heading(
+  numbering: (..nums) => {
+    let n = nums.pos()
+    if n.len() >= 2 { numbering("A.1", ..n.slice(1)) }
+  },
+  supplement: [Appendix],
+)
+#set figure(numbering: (..nums) => {
+  let section = counter(heading).at(here()).at(1, default: 0)
+  numbering("A.1", section, nums.pos().at(-1))
+})
+#set math.equation(numbering: (..nums) => {
+  let section = counter(heading).at(here()).at(1, default: 0)
+  numbering("(A.1)", section, nums.pos().at(-1))
+})
+// Labelled equations use equation-numbering (typst-template.typ), which reads
+// this state to switch to lettered numbers
+#state("thesis-appendix", false).update(true)
+// Restart table, figure and equation numbering at each lettered section, as
+// Quarto does at each chapter
+#show heading.where(level: 2): it => {
+  counter(figure.where(kind: "quarto-float-tbl")).update(0)
+  counter(figure.where(kind: "quarto-float-fig")).update(0)
+  counter(math.equation).update(0)
+  it
+}
+```

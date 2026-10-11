@@ -1,0 +1,30 @@
+title: Monash Honours Thesis (Typst)
+author: Rob J Hyndman
+version: 1.0.0
+quarto-required: ">=1.9.0"
+contributes:
+  formats:
+    typst:
+      template-partials:
+        - typst-template.typ
+        - typst-show.typ
+        - biblio.typ
+      # Typography
+      fontsize: 11pt
+      linestretch: 1.5
+      lang: en
+      region: AU
+      # Structure
+      toc: true
+      toc-depth: 2
+      number-sections: true
+      number-depth: 2
+      # Figures
+      fig-height: 5
+      fig-width: 8
+      # Knitr defaults
+      knitr:
+        opts_chunk:
+          echo: false
+          warning: false
+          message: false
