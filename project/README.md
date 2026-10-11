@@ -19,7 +19,7 @@ project/
 ├── data/            raw input data (HILDA, not distributed, see below)
 ├── output/          everything the code produces: data/, tables/, figures/, thesis.pdf
 ├── thesis/          Quarto source of the thesis
-└── images/          unused, can be deleted (see "Before submission")
+└── images/          unused, can be deleted
 ```
 
 Each folder has its own README with details.
@@ -136,15 +136,6 @@ Every exhibit in the thesis has one script in `code/exhibits/`, named after its 
 | Table F.1 | Best-fitting λ estimates for three specifications. | `table_F_01_decay_calibration.R` | `tables/table_F_01.html`, `.tex` | `tbl-lambda-calibration` |
 
 `output/tables/variable_summary.csv` (variable dictionary, not in the thesis) is written by `code/variablesummary.R`.
-
-## Before submission (checklist items still open)
-
-These items are needed by the Econometric Society replication checklist but cannot be completed from the code alone:
-
-- [ ] **README as PDF.** The checklist asks for the README in PDF format, for example `quarto render project/README.md --to pdf` or export from an editor. It also asks for the README to follow the social-science-data-editors template, which this file does.
-- [ ] **Data citation.** Add a reference for the HILDA dataset itself (with its DOI from the ADA Dataverse page) to `thesis/thesisrefs.bib`, cite it in the data chapter, and add it to the references below.
-- [ ] **Rights to republish.** Request an exemption from the data editor, because HILDA cannot be redistributed. Point them to the data availability statement above.
-- [ ] Name the zip file "Replication package", and sign and date the checklist.
 
 ## References
 
