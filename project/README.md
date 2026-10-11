@@ -139,6 +139,6 @@ Every exhibit in the thesis has one script in `code/exhibits/`, named after its 
 
 ## References
 
-Department of Social Services; Melbourne Institute of Applied Economic and Social Research (2025). *The Household, Income and Labour Dynamics in Australia (HILDA) Survey, General Release 24 (Waves 1–24)*. ADA Dataverse. DOI: *[add from the Dataverse page]*.
+Department of Social Services; Melbourne Institute of Applied Economic and Social Research (2025). *The Household, Income and Labour Dynamics in Australia (HILDA) Survey, General Release 24 (Waves 1–24)*. ADA Dataverse, V4. https://doi.org/10.26193/6M1BMR
 
 Summerfield, M., Garrard, B., Kamath, R., Nesa, M.K., Macalalad, N., Watson, N. and Wilkins, R. (2025). *HILDA User Manual – Release 24.* Melbourne Institute: Applied Economic and Social Research, University of Melbourne.
